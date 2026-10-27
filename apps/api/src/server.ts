@@ -9,8 +9,8 @@ import { createApp } from "./app.js";
 import { env } from "./env.js";
 
 const webDist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../web/dist");
-let publicUrl = process.env.PUBLIC_WEB_URL ?? process.env.RENDER_EXTERNAL_URL;
-if (publicUrl && !publicUrl.startsWith("http://") && !publicUrl.startsWith("https://")) {
+let publicUrl = (process.env.PUBLIC_WEB_URL || process.env.RENDER_EXTERNAL_URL || "https://ustozlar-jamoasi.onrender.com").trim();
+if (!publicUrl.startsWith("http://") && !publicUrl.startsWith("https://")) {
   publicUrl = `https://${publicUrl}`;
 }
 

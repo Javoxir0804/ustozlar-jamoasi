@@ -8,13 +8,14 @@ export type Ctx = Context & SessionFlavor<SessionData> & { dbUser?: BotUser | nu
 
 // Cheklar shu chatga (admin yoki adminlar guruhi) tasdiqlash tugmalari bilan yuboriladi
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID;
-let rawWeb = process.env.PUBLIC_WEB_URL ?? process.env.RENDER_EXTERNAL_URL ?? "http://localhost:5173";
-if (rawWeb && !rawWeb.startsWith("http://") && !rawWeb.startsWith("https://")) {
-  rawWeb = `https://${rawWeb}`;
+
+export function getBaseWebUrl(): string {
+  const p = (process.env.PUBLIC_WEB_URL || process.env.RENDER_EXTERNAL_URL || "https://ustozlar-jamoasi.onrender.com").trim();
+  if (p.startsWith("http://") || p.startsWith("https://")) {
+    return p.replace(/\/+$/, "");
+  }
+  return `https://${p.replace(/\/+$/, "")}`;
 }
-const WEB = rawWeb;
-// Telegram Web App faqat HTTPS manzilda ochiladi; lokal ishlab chiqishda oddiy havola beriladi
-const isHttps = WEB.startsWith("https://");
 
 export const MENU = {
   tests: "📝 Testlar",
@@ -34,8 +35,15 @@ const mainMenu = () =>
     .text(MENU.contacts).text(MENU.about)
     .resized();
 
-const webButton = (text: string, path: string) =>
-  isHttps ? new InlineKeyboard().webApp(text, `${WEB}${path}`) : new InlineKeyboard().url(text, `${WEB}${path}`);
+const webButton = (text: string, path: string) => {
+  const base = getBaseWebUrl();
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  const fullUrl = `${base}${cleanPath}`;
+  if (fullUrl.startsWith("https://")) {
+    return new InlineKeyboard().webApp(text, fullUrl);
+  }
+  return new InlineKeyboard().url(text, fullUrl);
+};
 
 export function createBot(token: string) {
   const bot = new Bot<Ctx>(token);
@@ -143,7 +151,7 @@ export function createBot(token: string) {
   bot.hears(/^\/cert_(\w+)$/, async (ctx) => {
     const number = ctx.match[1].replace(/_/g, "-");
     const pdf = await api.certificatePdf(number);
-    await ctx.replyWithDocument(new InputFile(new Uint8Array(pdf), `${number}.pdf`), { caption: `Sertifikat ${number}\nTekshirish: ${WEB}/verify/${number}` });
+    await ctx.replyWithDocument(new InputFile(new Uint8Array(pdf), `${number}.pdf`), { caption: `Sertifikat ${number}\nTekshirish: ${getBaseWebUrl()}/verify/${number}` });
   });
 
   bot.hears(MENU.top, async (ctx) => {
