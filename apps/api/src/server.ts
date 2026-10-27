@@ -24,7 +24,7 @@ const app = createApp({
   },
 });
 
-app.listen(env.port, async () => {
+app.listen(env.port, "0.0.0.0", async () => {
   console.log(`Server ${env.port}-portda ishga tushdi`);
   if (!bot) return console.warn("BOT_TOKEN berilmagan: bot o'chiq");
   if (!publicUrl?.startsWith("https://")) return console.warn("PUBLIC_WEB_URL https emas: webhook o'rnatilmadi");
