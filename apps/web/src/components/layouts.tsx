@@ -5,7 +5,7 @@ import { fullName } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { useConfig } from "../lib/config";
 import { insideTelegram } from "../lib/telegram";
-import { IconBook, IconHome, IconKey, IconLayers, IconLogout, IconMenu, IconSettings, IconShield, IconUser, IconUsers } from "./icons";
+import { IconBook, IconCheck, IconHome, IconKey, IconLayers, IconLogout, IconMenu, IconSettings, IconShield, IconUser, IconUsers } from "./icons";
 import { Logo } from "./Logo";
 import { Alert, Button, cx, PageLoader } from "./ui";
 
@@ -42,6 +42,9 @@ export function PublicLayout({ padded }: { padded?: boolean }) {
           <nav className="flex items-center gap-1 sm:gap-2">
             <Link to="/courses" className="rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100">
               Video darslar
+            </Link>
+            <Link to="/tests" className="hidden rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 sm:block">
+              Testlar
             </Link>
             <a href="/#contacts" className="hidden rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 sm:block">
               Bog'lanish
@@ -113,9 +116,10 @@ export function ContactList({ contacts }: { contacts?: { phone?: string; telegra
 
 // ---------- Talaba bo'limi ----------
 
-// Keyingi bosqichlarda bu ro'yxatga Testlar va Natijalar qo'shiladi
+// Keyingi bosqichlarda bu ro'yxatga Reyting qo'shiladi
 const STUDENT_NAV = [
   { to: "/courses", label: "Video darslar", icon: IconBook },
+  { to: "/tests", label: "Testlar", icon: IconCheck },
   { to: "/cabinet", label: "Kabinet", icon: IconUser },
 ];
 
@@ -177,6 +181,7 @@ const ADMIN_NAV = [
   { to: "/admin/students", label: "Talabalar", icon: IconUsers },
   { to: "/admin/subjects", label: "Fanlar", icon: IconLayers },
   { to: "/admin/courses", label: "Kurslar", icon: IconBook },
+  { to: "/admin/tests", label: "Testlar", icon: IconCheck },
   { to: "/admin/admins", label: "Adminlar", icon: IconShield },
   { to: "/admin/settings", label: "Sozlamalar", icon: IconSettings },
   { to: "/admin/password", label: "Parolni o'zgartirish", icon: IconKey },

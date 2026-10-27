@@ -8,6 +8,7 @@ import { authRouter } from "./routes/auth.js";
 import { coursesRouter } from "./routes/courses.js";
 import { filesRouter } from "./routes/files.js";
 import { publicRouter } from "./routes/public.js";
+import { testsRouter } from "./routes/tests.js";
 
 // BigInt (Telegram ID) JSON da satr bo'lib chiqadi
 (BigInt.prototype as unknown as { toJSON: () => string }).toJSON = function () {
@@ -49,6 +50,7 @@ export function createApp(opts: { beforeApi?: (app: express.Express) => void; af
   app.use("/api", filesRouter);
   app.use("/api/admin", adminRouter);
   app.use("/api", coursesRouter);
+  app.use("/api", testsRouter);
   app.use("/api", (_req, res) => res.status(404).json({ error: { code: "NOT_FOUND", message: "Bunday manzil yo'q" } }));
 
   opts.afterApi?.(app);

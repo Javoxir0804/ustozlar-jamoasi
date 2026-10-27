@@ -4,7 +4,8 @@ import { adminsRouter } from "./admins.js";
 import { contentRouter } from "./content.js";
 import { settingsRouter } from "./settings.js";
 import { studentsRouter } from "./students.js";
+import { testsRouter } from "./tests.js";
 
 export const adminRouter = Router();
 adminRouter.use(requireAuth, requireAdmin);
-adminRouter.use(studentsRouter, adminsRouter, settingsRouter, contentRouter);
+adminRouter.use(studentsRouter, adminsRouter, settingsRouter, contentRouter, testsRouter);

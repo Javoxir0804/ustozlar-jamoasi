@@ -22,6 +22,11 @@ const CourseEdit = lazy(() => import("./pages/admin/CourseEdit"));
 const Catalog = lazy(() => import("./pages/courses/Catalog"));
 const CoursePage = lazy(() => import("./pages/courses/CoursePage"));
 const LessonPage = lazy(() => import("./pages/courses/LessonPage"));
+const AdminTests = lazy(() => import("./pages/admin/Tests"));
+const TestEdit = lazy(() => import("./pages/admin/TestEdit"));
+const TestList = lazy(() => import("./pages/tests/TestList"));
+const TestIntro = lazy(() => import("./pages/tests/TestIntro"));
+const AttemptPage = lazy(() => import("./pages/tests/AttemptPage"));
 
 function NotFound() {
   return (
@@ -51,9 +56,12 @@ createRoot(document.getElementById("root")!).render(
               <Route element={<CoursesLayout />}>
                 <Route path="courses" element={<Catalog />} />
                 <Route path="courses/:id" element={<CoursePage />} />
+                <Route path="tests" element={<TestList />} />
+                <Route path="tests/:id" element={<TestIntro />} />
               </Route>
               <Route path="onboarding" element={<Onboarding />} />
               <Route element={<RequireStudent />}>
+                <Route path="attempts/:id" element={<AttemptPage />} />
                 <Route element={<StudentLayout />}>
                   <Route path="cabinet" element={<Cabinet />} />
                   <Route path="lessons/:id" element={<LessonPage />} />
@@ -67,6 +75,8 @@ createRoot(document.getElementById("root")!).render(
                   <Route path="subjects" element={<Subjects />} />
                   <Route path="courses" element={<AdminCourses />} />
                   <Route path="courses/:id" element={<CourseEdit />} />
+                  <Route path="tests" element={<AdminTests />} />
+                  <Route path="tests/:id" element={<TestEdit />} />
                   <Route path="admins" element={<Admins />} />
                   <Route path="settings" element={<SettingsPage />} />
                   <Route path="password" element={<Password />} />
