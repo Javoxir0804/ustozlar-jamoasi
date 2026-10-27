@@ -15,7 +15,12 @@ import { testsRouter } from "./routes/tests.js";
   return this.toString();
 };
 
-export function createApp(opts: { beforeErrors?: (app: express.Express) => void } = {}) {
+export function createApp(
+  opts: {
+    beforeRoutes?: (app: express.Express) => void;
+    beforeErrors?: (app: express.Express) => void;
+  } = {},
+) {
   const app = express();
   app.set("trust proxy", 1);
   app.use(
@@ -49,6 +54,9 @@ export function createApp(opts: { beforeErrors?: (app: express.Express) => void 
 
   app.get("/health", (_req, res) => res.json({ ok: true }));
   app.get("/api/health", (_req, res) => res.json({ ok: true }));
+
+  opts.beforeRoutes?.(app);
+
   app.use("/api/auth", authRouter);
   app.use("/api/public", publicRouter);
   app.use("/api/bot", botRouter);

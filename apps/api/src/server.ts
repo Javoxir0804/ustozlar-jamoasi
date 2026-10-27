@@ -19,8 +19,10 @@ const bot = env.botToken ? createBot(env.botToken) : null;
 const hookPath = `/api/telegram/${crypto.createHash("sha256").update(env.botToken).digest("hex").slice(0, 32)}`;
 
 const app = createApp({
-  beforeErrors: (a) => {
+  beforeRoutes: (a) => {
     if (bot) a.post(hookPath, webhookCallback(bot, "express"));
+  },
+  beforeErrors: (a) => {
     a.use(express.static(webDist, { index: false, maxAge: "1h" }));
     // React marshrutlari (/tests, /verify/... va h.k.) uchun index.html
     a.get(/^\/(?!api\/).*/, (_req, res) => res.sendFile(path.join(webDist, "index.html")));
