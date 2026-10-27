@@ -10,6 +10,9 @@ COPY packages/ ./packages/
 
 RUN pnpm install --frozen-lockfile --prod=false
 RUN pnpm --filter @att/db generate
+
+ARG VITE_BOT_USERNAME=ustozlar_jamoasibot
+ENV VITE_BOT_USERNAME=$VITE_BOT_USERNAME
 RUN pnpm --filter @att/web build
 
 ENV PORT=10000

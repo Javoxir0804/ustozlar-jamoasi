@@ -19,6 +19,10 @@ services:
         generateValue: true
       - key: BOT_TOKEN
         sync: false
+      - key: BOT_USERNAME
+        value: ustozlar_jamoasibot
+      - key: VITE_BOT_USERNAME
+        value: ustozlar_jamoasibot
       - key: ADMIN_CHAT_ID
         sync: false
       - key: ADMIN_TELEGRAM_IDS
