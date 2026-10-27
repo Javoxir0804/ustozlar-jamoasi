@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { loginWithCredentials, loginWithWidget, registerWithCredentials, RegisterData } from "../api";
 
 const BOT = import.meta.env.VITE_BOT_USERNAME as string | undefined;
+const SHOW_DEMO = import.meta.env.VITE_SHOW_DEMO === "1";
 
 export function LoginPage() {
   const [tab, setTab] = useState<"login" | "register">("login");
@@ -134,22 +135,13 @@ export function LoginPage() {
           </p>
         </div>
 
-        {/* Tezkor Demo hisoblar qutisi */}
+        {/* Tezkor demo hisoblar: faqat sinov muhitida (VITE_SHOW_DEMO=1). Admin paroli hech qachon sahifada ko'rsatilmaydi */}
+        {SHOW_DEMO && (
         <div className="mb-6 rounded-2xl border border-slate-800 bg-[#0e0f17]/90 p-4 shadow-xl backdrop-blur-sm">
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2.5 text-center">
             ⚡ Tezkor sinov hisoblari (1-bosishda kirish):
           </p>
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={() => quickDemoLogin("admin", "admin123")}
-              className="flex flex-col items-center justify-center rounded-xl border border-purple-500/30 bg-purple-500/10 p-2.5 text-center transition hover:border-purple-500/70 hover:bg-purple-500/20 active:scale-95"
-            >
-              <span className="text-base">👑</span>
-              <span className="text-xs font-bold text-purple-300">Admin</span>
-              <span className="text-[10px] text-slate-400 font-mono">admin123</span>
-            </button>
-
+          <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={() => quickDemoLogin("ustoz", "ustoz123")}
@@ -171,6 +163,8 @@ export function LoginPage() {
             </button>
           </div>
         </div>
+
+        )}
 
         {/* Asosiy Kartochka */}
         <div className="rounded-2xl border border-slate-800 bg-[#11131c] p-6 shadow-2xl">
