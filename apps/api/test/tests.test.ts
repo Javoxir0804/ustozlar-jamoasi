@@ -27,6 +27,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   const tests = await prisma.test.findMany({ where: { subjectId }, select: { id: true } });
+  await prisma.certificate.deleteMany({ where: { attempt: { testId: { in: tests.map((t) => t.id) } } } });
   await prisma.attempt.deleteMany({ where: { testId: { in: tests.map((t) => t.id) } } });
   await prisma.test.deleteMany({ where: { subjectId } });
   await prisma.course.deleteMany({ where: { subjectId } });

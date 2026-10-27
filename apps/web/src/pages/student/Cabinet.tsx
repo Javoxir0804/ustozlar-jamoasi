@@ -4,7 +4,7 @@ import { CourseGrid } from "../../components/CourseGrid";
 import type { CourseCard } from "../courses/types";
 import { PageHeader } from "../../components/layouts";
 import { ProfileForm } from "../../components/ProfileForm";
-import { IconEdit } from "../../components/icons";
+import { IconAward, IconEdit } from "../../components/icons";
 import { Badge, Button, Card, EmptyState, useToast } from "../../components/ui";
 import { api, fmtDate, fullName } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -14,10 +14,12 @@ export default function Cabinet() {
   const toast = useToast();
   const [editing, setEditing] = useState(false);
   const [courses, setCourses] = useState<CourseCard[] | null>(null);
+  const [certs, setCerts] = useState<{ number: string; issuedAt: string; scorePct: number; test: string; subject: string }[]>([]);
   const [attempts, setAttempts] = useState<{ id: string; status: string; startedAt: string; scorePct: number | null; test: { title: string } }[] | null>(null);
   useEffect(() => {
     api<CourseCard[]>("/courses?mine=1").then(setCourses, () => setCourses([]));
     api<typeof attempts>("/me/attempts").then(setAttempts, () => setAttempts([]));
+    api<typeof certs>("/me/certificates").then(setCerts, () => setCerts([]));
   }, []);
   if (!user) return null;
   const rows: [string, string | null][] = [
@@ -90,6 +92,27 @@ export default function Cabinet() {
           )}
         </Card>
         <div className="space-y-6">
+          {certs.length > 0 && (
+            <Card className="overflow-hidden">
+              <h2 className="border-b border-line px-5 py-3.5 font-semibold">Sertifikatlarim</h2>
+              <ul className="divide-y divide-line">
+                {certs.map((c) => (
+                  <li key={c.number} className="flex items-center gap-3 px-5 py-3">
+                    <IconAward className="h-5 w-5 shrink-0 text-emerald-600" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium">{c.test}</span>
+                      <span className="block text-xs text-muted">
+                        {c.scorePct}% · {fmtDate(c.issuedAt)}
+                      </span>
+                    </span>
+                    <a href={`/api/certificates/${c.number}/pdf?download=1`} className="shrink-0 text-sm font-medium text-brand-700 hover:underline">
+                      PDF
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
           <Card className="overflow-hidden">
             <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
               <h2 className="font-semibold">Test natijalari</h2>

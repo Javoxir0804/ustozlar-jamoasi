@@ -27,6 +27,9 @@ const TestEdit = lazy(() => import("./pages/admin/TestEdit"));
 const TestList = lazy(() => import("./pages/tests/TestList"));
 const TestIntro = lazy(() => import("./pages/tests/TestIntro"));
 const AttemptPage = lazy(() => import("./pages/tests/AttemptPage"));
+const Verify = lazy(() => import("./pages/public/Verify"));
+const Rating = lazy(() => import("./pages/public/Rating"));
+const AdminCertificates = lazy(() => import("./pages/admin/Certificates"));
 
 function NotFound() {
   return (
@@ -53,11 +56,16 @@ createRoot(document.getElementById("root")!).render(
                 <Route index element={<Home />} />
                 <Route path="login" element={<Login />} />
               </Route>
+              <Route element={<PublicLayout padded />}>
+                <Route path="verify" element={<Verify />} />
+                <Route path="verify/:number" element={<Verify />} />
+              </Route>
               <Route element={<CoursesLayout />}>
                 <Route path="courses" element={<Catalog />} />
                 <Route path="courses/:id" element={<CoursePage />} />
                 <Route path="tests" element={<TestList />} />
                 <Route path="tests/:id" element={<TestIntro />} />
+                <Route path="rating" element={<Rating />} />
               </Route>
               <Route path="onboarding" element={<Onboarding />} />
               <Route element={<RequireStudent />}>
@@ -77,6 +85,7 @@ createRoot(document.getElementById("root")!).render(
                   <Route path="courses/:id" element={<CourseEdit />} />
                   <Route path="tests" element={<AdminTests />} />
                   <Route path="tests/:id" element={<TestEdit />} />
+                  <Route path="certificates" element={<AdminCertificates />} />
                   <Route path="admins" element={<Admins />} />
                   <Route path="settings" element={<SettingsPage />} />
                   <Route path="password" element={<Password />} />

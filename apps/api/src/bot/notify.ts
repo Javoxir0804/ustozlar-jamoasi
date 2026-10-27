@@ -1,5 +1,5 @@
 // Bot orqali xabar yuborish (server ichidan, masalan yangi talaba haqida adminga).
-import type { User } from "@edu/db";
+import { prisma, type User } from "@edu/db";
 import { env } from "../env.js";
 
 export const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -43,4 +43,13 @@ export async function notifyAccessGranted(u: User, course: { id: string; title: 
   const until = expiresAt ? `\n⏳ Muddati: ${expiresAt.toLocaleDateString("ru-RU")} gacha` : "";
   const markup = https ? { inline_keyboard: [[{ text: "▶️ Kursni ochish", web_app: { url: `${env.publicWebUrl}/courses/${course.id}` } }]] } : undefined;
   await sendMessage(u.telegramId.toString(), `🎉 Sizga <b>${esc(course.title)}</b> kursi ochildi!${until}`, markup).catch((e) => console.error("Ruxsat xabari yuborilmadi:", e.message));
+}
+
+export async function notifyCertificate(userId: string, number: string) {
+  const u = await prisma.user.findUnique({ where: { id: userId }, select: { telegramId: true, firstName: true } });
+  if (!u?.telegramId) return;
+  const url = `${env.publicWebUrl}/api/certificates/${encodeURIComponent(number)}/pdf`;
+  const https = env.publicWebUrl.startsWith("https://");
+  const markup = https ? { inline_keyboard: [[{ text: "📄 Sertifikatni yuklab olish", url }]] } : undefined;
+  await sendMessage(u.telegramId.toString(), `🏆 Tabriklaymiz, ${esc(u.firstName)}! Sizga sertifikat berildi.\nRaqami: <code>${esc(number)}</code>`, markup).catch((e) => console.error("Sertifikat xabari yuborilmadi:", e.message));
 }

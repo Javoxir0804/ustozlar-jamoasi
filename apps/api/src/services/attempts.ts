@@ -1,7 +1,9 @@
 // Test urinishlari: boshlash (ruxsat, jadval, urinishlar, parol/kod), javob saqlash, yakunlash, reytingdagi o'rin.
 import { prisma, type Attempt, type Test, type User } from "@edu/db";
 import { ApiError, badRequest, forbidden, notFound } from "../lib/errors.js";
+import { notifyCertificate } from "../bot/notify.js";
 import { hasCourseAccess } from "./access.js";
+import { issueCertificateIfEligible } from "./certificates.js";
 import { buildLayout, score, type LayoutItem } from "./scoring.js";
 
 /** Talaba testni boshlay oladimi: kursga bog'langan bo'lsa kursga ruxsat kerak. */
@@ -67,10 +69,11 @@ export async function getAttemptView(attemptId: string, user: User) {
   if (attempt.status === "IN_PROGRESS" && attempt.deadlineAt <= new Date()) attempt = await finishAttempt(attempt.id, user, true);
   const layout = attempt.layout as LayoutItem[];
   const finished = attempt.status !== "IN_PROGRESS";
-  const [questions, answers, test] = await Promise.all([
+  const [questions, answers, test, cert] = await Promise.all([
     prisma.question.findMany({ where: { id: { in: layout.map((l) => l.q) } }, include: { options: true } }),
     prisma.attemptAnswer.findMany({ where: { attemptId } }),
     prisma.test.findUniqueOrThrow({ where: { id: attempt.testId }, select: { id: true, title: true, durationMin: true, showAnswers: true, subject: { select: { name: true } } } }),
+    finished ? prisma.certificate.findUnique({ where: { attemptId }, select: { number: true } }) : null,
   ]);
   const qById = new Map(questions.map((q) => [q.id, q]));
   const aByQ = new Map(answers.map((a) => [a.questionId, a]));
@@ -83,7 +86,7 @@ export async function getAttemptView(attemptId: string, user: User) {
     finishedAt: attempt.finishedAt,
     serverNow: new Date(),
     deadlineAt: attempt.deadlineAt,
-    result: finished ? { correctCount: attempt.correctCount, totalCount: attempt.totalCount, scorePct: attempt.scorePct, rank: await rankOf(attempt), participants: await participantsOf(attempt.testId) } : null,
+    result: finished ? { correctCount: attempt.correctCount, totalCount: attempt.totalCount, scorePct: attempt.scorePct, rank: await rankOf(attempt), participants: await participantsOf(attempt.testId), certificate: cert?.number ?? null } : null,
     reveal,
     questions: layout.map((item, idx) => {
       const q = qById.get(item.q)!;
@@ -126,6 +129,13 @@ export async function saveAnswer(attemptId: string, user: User, questionId: stri
 }
 
 export async function finishAttempt(attemptId: string, user: User, expired = false): Promise<Attempt> {
+  const finished = await closeAttempt(attemptId, user, expired);
+  const issued = await issueCertificateIfEligible(finished);
+  if (issued?.created) void notifyCertificate(finished.userId, issued.cert.number);
+  return finished;
+}
+
+async function closeAttempt(attemptId: string, user: User, expired: boolean): Promise<Attempt> {
   const attempt = await loadOwnAttempt(attemptId, user);
   if (attempt.status !== "IN_PROGRESS") return attempt;
   const layout = attempt.layout as LayoutItem[];

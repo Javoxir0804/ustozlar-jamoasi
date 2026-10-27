@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { requireAdmin, requireAuth } from "../../auth/session.js";
 import { adminsRouter } from "./admins.js";
+import { certificatesAdminRouter } from "./certificates.js";
 import { contentRouter } from "./content.js";
 import { settingsRouter } from "./settings.js";
 import { studentsRouter } from "./students.js";
@@ -8,4 +9,4 @@ import { testsRouter } from "./tests.js";
 
 export const adminRouter = Router();
 adminRouter.use(requireAuth, requireAdmin);
-adminRouter.use(studentsRouter, adminsRouter, settingsRouter, contentRouter, testsRouter);
+adminRouter.use(studentsRouter, adminsRouter, settingsRouter, contentRouter, testsRouter, certificatesAdminRouter);

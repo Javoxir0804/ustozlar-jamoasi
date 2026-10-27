@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Markdown } from "../../components/Markdown";
-import { IconCheck, IconLeft, IconRight } from "../../components/icons";
+import { IconAward, IconCheck, IconLeft, IconRight } from "../../components/icons";
 import { Alert, Button, Card, cx, Modal, PageLoader, useToast } from "../../components/ui";
 import { api, ApiError } from "../../lib/api";
 
@@ -16,7 +16,7 @@ type View = {
   finishedAt: string | null;
   serverNow: string;
   deadlineAt: string;
-  result: { correctCount: number; totalCount: number; scorePct: number; rank: number | null; participants: number } | null;
+  result: { correctCount: number; totalCount: number; scorePct: number; rank: number | null; participants: number; certificate: string | null } | null;
   reveal: boolean;
   questions: Question[];
 };
@@ -307,6 +307,18 @@ function ResultView({ view }: { view: View }) {
           ))}
         </dl>
         {view.status === "EXPIRED" && <p className="mt-4 text-sm text-amber-700">Vaqt tugagani uchun test avtomatik yakunlandi.</p>}
+        {r.certificate && (
+          <div className="mt-6 flex flex-col items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-left sm:flex-row">
+            <IconAward className="h-8 w-8 shrink-0 text-emerald-600" />
+            <div className="min-w-0 flex-1 text-center sm:text-left">
+              <p className="font-semibold text-emerald-800">Tabriklaymiz! Sizga sertifikat berildi</p>
+              <p className="font-mono text-xs text-emerald-700">{r.certificate}</p>
+            </div>
+            <a href={`/api/certificates/${r.certificate}/pdf?download=1`}>
+              <Button size="sm">Yuklab olish</Button>
+            </a>
+          </div>
+        )}
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <Link to={`/tests/${view.test.id}`}>
             <Button variant="secondary">Test sahifasi</Button>

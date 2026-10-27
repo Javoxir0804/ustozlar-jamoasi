@@ -5,7 +5,7 @@ import { fullName } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { useConfig } from "../lib/config";
 import { insideTelegram } from "../lib/telegram";
-import { IconBook, IconCheck, IconHome, IconKey, IconLayers, IconLogout, IconMenu, IconSettings, IconShield, IconUser, IconUsers } from "./icons";
+import { IconAward, IconBook, IconChart, IconCheck, IconHome, IconKey, IconLayers, IconLogout, IconMenu, IconSettings, IconShield, IconUser, IconUsers } from "./icons";
 import { Logo } from "./Logo";
 import { Alert, Button, cx, PageLoader } from "./ui";
 
@@ -40,11 +40,14 @@ export function PublicLayout({ padded }: { padded?: boolean }) {
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
           <Logo />
           <nav className="flex items-center gap-1 sm:gap-2">
-            <Link to="/courses" className="rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100">
+            <Link to="/courses" className="whitespace-nowrap rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100">
               Video darslar
             </Link>
             <Link to="/tests" className="hidden rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 sm:block">
               Testlar
+            </Link>
+            <Link to="/rating" className="hidden rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 sm:block">
+              Reyting
             </Link>
             <a href="/#contacts" className="hidden rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 sm:block">
               Bog'lanish
@@ -69,6 +72,9 @@ export function PublicLayout({ padded }: { padded?: boolean }) {
           <div>
             <Logo />
             <p className="mt-3 max-w-sm text-sm text-muted">{config?.site?.tagline || "Video darslar, testlar va sertifikatlar bitta platformada."}</p>
+            <Link to="/verify" className="mt-3 inline-block text-sm font-medium text-brand-700 hover:underline">
+              Sertifikatni tekshirish
+            </Link>
           </div>
           <ContactList contacts={c} />
         </div>
@@ -116,10 +122,10 @@ export function ContactList({ contacts }: { contacts?: { phone?: string; telegra
 
 // ---------- Talaba bo'limi ----------
 
-// Keyingi bosqichlarda bu ro'yxatga Reyting qo'shiladi
 const STUDENT_NAV = [
   { to: "/courses", label: "Video darslar", icon: IconBook },
   { to: "/tests", label: "Testlar", icon: IconCheck },
+  { to: "/rating", label: "Reyting", icon: IconChart },
   { to: "/cabinet", label: "Kabinet", icon: IconUser },
 ];
 
@@ -182,6 +188,7 @@ const ADMIN_NAV = [
   { to: "/admin/subjects", label: "Fanlar", icon: IconLayers },
   { to: "/admin/courses", label: "Kurslar", icon: IconBook },
   { to: "/admin/tests", label: "Testlar", icon: IconCheck },
+  { to: "/admin/certificates", label: "Sertifikatlar", icon: IconAward },
   { to: "/admin/admins", label: "Adminlar", icon: IconShield },
   { to: "/admin/settings", label: "Sozlamalar", icon: IconSettings },
   { to: "/admin/password", label: "Parolni o'zgartirish", icon: IconKey },

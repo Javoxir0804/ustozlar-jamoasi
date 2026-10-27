@@ -5,6 +5,7 @@ import rateLimit from "express-rate-limit";
 import { errorHandler } from "./lib/errors.js";
 import { adminRouter } from "./routes/admin/index.js";
 import { authRouter } from "./routes/auth.js";
+import { certificatesRouter } from "./routes/certificates.js";
 import { coursesRouter } from "./routes/courses.js";
 import { filesRouter } from "./routes/files.js";
 import { publicRouter } from "./routes/public.js";
@@ -51,6 +52,7 @@ export function createApp(opts: { beforeApi?: (app: express.Express) => void; af
   app.use("/api/admin", adminRouter);
   app.use("/api", coursesRouter);
   app.use("/api", testsRouter);
+  app.use("/api", certificatesRouter);
   app.use("/api", (_req, res) => res.status(404).json({ error: { code: "NOT_FOUND", message: "Bunday manzil yo'q" } }));
 
   opts.afterApi?.(app);

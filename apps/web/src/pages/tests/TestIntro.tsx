@@ -6,6 +6,7 @@ import { IconLeft } from "../../components/icons";
 import { Alert, Badge, Button, Card, Field, Input, PageLoader } from "../../components/ui";
 import { api, ApiError, fmtDate } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
+import { LeaderTable, type LeaderRow } from "../public/Rating";
 import type { TestCard } from "./types";
 
 export default function TestIntro() {
@@ -17,9 +18,11 @@ export default function TestIntro() {
   const [code, setCode] = useState("");
   const [startErr, setStartErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [top, setTop] = useState<LeaderRow[]>([]);
 
   useEffect(() => {
     api<TestCard>(`/tests/${id}`).then(setT, (e) => setErr(e instanceof ApiError ? e.message : "Yuklab bo'lmadi"));
+    api<LeaderRow[]>(`/tests/${id}/leaderboard`).then(setTop, () => setTop([]));
   }, [id, user?.id]);
 
   async function start() {
@@ -110,6 +113,12 @@ export default function TestIntro() {
           )}
         </div>
       </Card>
+      {top.length > 0 && (
+        <Card className="mt-6 overflow-hidden">
+          <h2 className="border-b border-line px-5 py-3.5 font-semibold">Top 10</h2>
+          <LeaderTable rows={top} />
+        </Card>
+      )}
     </div>
   );
 }
