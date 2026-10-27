@@ -4,6 +4,7 @@ import { PageHeader } from "../../components/layouts";
 import { IconLock } from "../../components/icons";
 import { Alert, Badge, Card, cx, EmptyState, PageLoader } from "../../components/ui";
 import { api, ApiError, fmtDate } from "../../lib/api";
+import { AtomMark } from "../../components/Physics";
 import type { TestCard } from "./types";
 
 export function TestStateBadge({ t }: { t: TestCard }) {
@@ -48,15 +49,18 @@ export default function TestList() {
           <EmptyState title="Hozircha testlar yo'q" />
         </Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="stagger grid gap-4 sm:grid-cols-2">
           {shown.map((t) => (
-            <Link key={t.id} to={`/tests/${t.id}`}>
-              <Card className="h-full p-5 transition hover:-translate-y-0.5 hover:shadow-md">
+            <Link key={t.id} to={`/tests/${t.id}`} className="group">
+              <Card className="card-lift relative h-full overflow-hidden p-5 pl-20">
+                <span className="absolute left-5 top-5 flex h-11 w-11 items-center justify-center rounded-xl bg-cosmos-900 text-brand-300 transition-transform duration-500 group-hover:rotate-12">
+                  <AtomMark className="h-7 w-7" />
+                </span>
                 <div className="mb-2 flex flex-wrap gap-1.5">
                   <Badge tone="blue">{t.subject.name}</Badge>
                   <TestStateBadge t={t} />
                 </div>
-                <h3 className="font-semibold text-ink">{t.title}</h3>
+                <h3 className="font-display text-[15px] font-semibold text-ink transition-colors group-hover:text-brand-700">{t.title}</h3>
                 <p className="mt-1 text-sm text-muted">
                   {t.questionCount} ta savol · {t.durationMin} daqiqa
                   {t.maxAttempts ? ` · ${t.attemptsUsed}/${t.maxAttempts} urinish` : ""}

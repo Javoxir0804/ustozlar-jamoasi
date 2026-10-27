@@ -7,6 +7,7 @@ import { useConfig } from "../lib/config";
 import { insideTelegram } from "../lib/telegram";
 import { IconAward, IconBook, IconChart, IconCheck, IconHome, IconKey, IconLayers, IconLogout, IconMenu, IconSettings, IconShield, IconUser, IconUsers } from "./icons";
 import { Logo } from "./Logo";
+import { Wave } from "./Physics";
 import { Alert, Button, cx, PageLoader } from "./ui";
 
 // ---------- Kirish tekshiruvlari ----------
@@ -36,20 +37,20 @@ export function PublicLayout({ padded }: { padded?: boolean }) {
   const c = config?.contacts;
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-30 border-b border-line/70 bg-white/85 backdrop-blur">
+      <header className="glass sticky top-0 z-30 border-b border-line/70">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
           <Logo />
           <nav className="flex items-center gap-1 sm:gap-2">
-            <Link to="/courses" className="whitespace-nowrap rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100">
+            <Link to="/courses" className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-brand-50 hover:text-brand-700">
               Video darslar
             </Link>
-            <Link to="/tests" className="hidden rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 sm:block">
+            <Link to="/tests" className="hidden rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-brand-50 hover:text-brand-700 sm:block">
               Testlar
             </Link>
-            <Link to="/rating" className="hidden rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 sm:block">
+            <Link to="/rating" className="hidden rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-brand-50 hover:text-brand-700 sm:block">
               Reyting
             </Link>
-            <a href="/#contacts" className="hidden rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 sm:block">
+            <a href="/#contacts" className="hidden rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-brand-50 hover:text-brand-700 sm:block">
               Bog'lanish
             </a>
             {user ? (
@@ -64,27 +65,30 @@ export function PublicLayout({ padded }: { padded?: boolean }) {
           </nav>
         </div>
       </header>
-      <main className={cx("flex-1", padded && "mx-auto w-full max-w-5xl px-4 py-6")}>
-        <Outlet />
+      <main className={cx("flex-1", padded && "mx-auto w-full max-w-5xl px-4 py-8")}>
+        <PageFade>
+          <Outlet />
+        </PageFade>
       </main>
-      <footer id="contacts" className="border-t border-line bg-white">
-        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:grid-cols-2">
+      <footer id="contacts" className="bg-cosmos relative overflow-hidden text-slate-300">
+        <Wave className="absolute inset-x-0 top-0 h-16 w-full text-brand-400/30" />
+        <div className="relative mx-auto grid max-w-6xl gap-8 px-4 pb-10 pt-16 sm:grid-cols-2">
           <div>
-            <Logo />
-            <p className="mt-3 max-w-sm text-sm text-muted">{config?.site?.tagline || "Video darslar, testlar va sertifikatlar bitta platformada."}</p>
-            <Link to="/verify" className="mt-3 inline-block text-sm font-medium text-brand-700 hover:underline">
+            <Logo dark />
+            <p className="mt-3 max-w-sm text-sm text-slate-400">{config?.site?.tagline || "Video darslar, testlar va sertifikatlar bitta platformada."}</p>
+            <Link to="/verify" className="mt-3 inline-block text-sm font-medium text-ion hover:underline">
               Sertifikatni tekshirish
             </Link>
           </div>
-          <ContactList contacts={c} />
+          <ContactList contacts={c} dark />
         </div>
-        <div className="border-t border-line py-4 text-center text-xs text-muted">© {new Date().getFullYear()} {config?.site?.title || "Ustozlar jamoasi"}</div>
+        <div className="relative border-t border-white/10 py-4 text-center text-xs text-slate-500">© {new Date().getFullYear()} {config?.site?.title || "Ustozlar jamoasi"}</div>
       </footer>
     </div>
   );
 }
 
-export function ContactList({ contacts }: { contacts?: { phone?: string; telegram?: string; address?: string; email?: string; mapUrl?: string } | null }) {
+export function ContactList({ contacts, dark }: { contacts?: { phone?: string; telegram?: string; address?: string; email?: string; mapUrl?: string } | null; dark?: boolean }) {
   const c = contacts ?? {};
   const tg = c.telegram?.replace(/^https?:\/\/t\.me\//, "@");
   const rows = [
@@ -95,15 +99,15 @@ export function ContactList({ contacts }: { contacts?: { phone?: string; telegra
   ].filter(Boolean) as { label: string; value: string; href?: string }[];
   return (
     <div>
-      <h3 className="text-sm font-semibold text-ink">Bog'lanish</h3>
+      <h3 className={cx("font-display text-sm font-semibold", dark ? "text-white" : "text-ink")}>Bog'lanish</h3>
       {rows.length === 0 ? (
-        <p className="mt-3 text-sm text-muted">Aloqa ma'lumotlari tez orada qo'shiladi.</p>
+        <p className={cx("mt-3 text-sm", dark ? "text-slate-400" : "text-muted")}>Aloqa ma'lumotlari tez orada qo'shiladi.</p>
       ) : (
         <dl className="mt-3 space-y-2 text-sm">
           {rows.map((r) => (
             <div key={r.label} className="flex gap-3">
-              <dt className="w-20 shrink-0 text-muted">{r.label}</dt>
-              <dd className="text-ink">
+              <dt className={cx("w-20 shrink-0", dark ? "text-slate-500" : "text-muted")}>{r.label}</dt>
+              <dd className={dark ? "text-slate-200" : "text-ink"}>
                 {r.href ? (
                   <a href={r.href} target={r.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer" className="hover:text-brand-700 hover:underline">
                     {r.value}
@@ -142,12 +146,12 @@ export function StudentLayout() {
   const tg = insideTelegram();
   return (
     <div className="min-h-screen pb-20 sm:pb-0">
-      <header className="sticky top-0 z-30 border-b border-line bg-white">
-        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-3 px-4">
+      <header className="glass sticky top-0 z-30 border-b border-line/70">
+        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-3 px-4">
           <Logo to="/cabinet" />
           <nav className="hidden items-center gap-1 sm:flex">
             {STUDENT_NAV.map((n) => (
-              <NavLink key={n.to} to={n.to} className={({ isActive }) => cx("rounded-lg px-3 py-2 text-sm font-medium", isActive ? "bg-brand-50 text-brand-700" : "text-slate-600 hover:bg-slate-100")}>
+              <NavLink key={n.to} to={n.to} className={({ isActive }) => cx("rounded-lg px-3 py-2 text-sm font-medium", isActive ? "bg-cosmos-900 text-white shadow-sm" : "text-slate-600 hover:bg-brand-50 hover:text-brand-700")}>
                 {n.label}
               </NavLink>
             ))}
@@ -163,15 +167,23 @@ export function StudentLayout() {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-5xl px-4 py-6">
-        <Outlet />
+      <main className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
+        <PageFade>
+          <Outlet />
+        </PageFade>
       </main>
       {STUDENT_NAV.length > 1 && (
-        <nav className="fixed inset-x-0 bottom-0 z-30 grid border-t border-line bg-white pb-[env(safe-area-inset-bottom)] sm:hidden" style={{ gridTemplateColumns: `repeat(${STUDENT_NAV.length}, 1fr)` }}>
+        <nav className="glass fixed inset-x-0 bottom-0 z-30 grid border-t border-line/70 pb-[env(safe-area-inset-bottom)] sm:hidden" style={{ gridTemplateColumns: `repeat(${STUDENT_NAV.length}, 1fr)` }}>
           {STUDENT_NAV.map((n) => (
             <NavLink key={n.to} to={n.to} className={({ isActive }) => cx("flex flex-col items-center gap-0.5 py-2 text-[11px] font-medium", isActive ? "text-brand-700" : "text-slate-500")}>
-              <n.icon className="h-5 w-5" />
-              {n.label}
+              {({ isActive }) => (
+                <>
+                  <span className={cx("flex h-7 w-12 items-center justify-center rounded-full transition", isActive && "bg-brand-100")}>
+                    <n.icon className="h-5 w-5" />
+                  </span>
+                  {n.label}
+                </>
+              )}
             </NavLink>
           ))}
         </nav>
@@ -205,7 +217,7 @@ export function AdminLayout() {
           to={n.to}
           end={n.end}
           onClick={() => setOpen(false)}
-          className={({ isActive }) => cx("flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition", isActive ? "bg-brand-600 text-white" : "text-slate-300 hover:bg-white/10 hover:text-white")}
+          className={({ isActive }) => cx("flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition", isActive ? "btn-glow text-white" : "text-slate-400 hover:bg-white/5 hover:text-white")}
         >
           <n.icon className="h-5 w-5" />
           {n.label}
@@ -214,13 +226,14 @@ export function AdminLayout() {
     </nav>
   );
   const sidebar = (
-    <div className="flex h-full flex-col bg-slate-900">
-      <div className="flex h-16 items-center gap-2 px-5 text-white">
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-sm font-bold">A</span>
-        <span className="font-semibold">Admin panel</span>
+    <div className="bg-cosmos relative flex h-full flex-col overflow-hidden">
+      <div className="bg-grid-dark mask-fade pointer-events-none absolute inset-0" />
+      <div className="relative flex h-16 items-center px-5">
+        <Logo to="/admin" dark />
       </div>
-      <div className="flex-1 overflow-y-auto">{nav}</div>
-      <div className="border-t border-white/10 p-3">
+      <p className="relative px-6 pb-1 font-mono text-[10px] uppercase tracking-[0.2em] text-slate-500">Admin panel</p>
+      <div className="relative flex-1 overflow-y-auto">{nav}</div>
+      <div className="relative border-t border-white/10 p-3">
         <div className="px-3 pb-2 text-xs text-slate-400">
           {user && fullName(user)} · <span className="text-slate-300">{user?.login}</span>
         </div>
@@ -235,20 +248,22 @@ export function AdminLayout() {
       <aside className="fixed inset-y-0 left-0 hidden w-64 lg:block">{sidebar}</aside>
       {open && (
         <div className="fixed inset-0 z-40 lg:hidden" onClick={() => setOpen(false)}>
-          <div className="absolute inset-0 bg-slate-900/50" />
+          <div className="absolute inset-0 bg-cosmos-950/60 backdrop-blur-sm" />
           <aside className="absolute inset-y-0 left-0 w-64" onClick={(e) => e.stopPropagation()}>
             {sidebar}
           </aside>
         </div>
       )}
-      <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-line bg-white px-4 lg:hidden">
+      <header className="glass sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-line/70 px-4 lg:hidden">
         <button onClick={() => setOpen(true)} className="rounded-md p-1.5 text-slate-600 hover:bg-slate-100" aria-label="Menyu">
           <IconMenu className="h-6 w-6" />
         </button>
-        <span className="font-semibold">Admin panel</span>
+        <span className="font-display text-sm font-semibold">Admin panel</span>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-6 lg:px-8 lg:py-8">
-        <Outlet />
+        <PageFade>
+          <Outlet />
+        </PageFade>
       </main>
     </div>
   );
@@ -258,7 +273,7 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-ink">{title}</h1>
+        <h1 className="font-display text-2xl font-semibold tracking-tight text-ink sm:text-[28px]">{title}</h1>
         {subtitle && <p className="mt-1 text-sm text-muted">{subtitle}</p>}
       </div>
       {actions && <div className="flex gap-2">{actions}</div>}
@@ -273,4 +288,14 @@ export function BlockedNotice() {
       <Alert>{error}</Alert>
     </div>
   ) : null;
+}
+
+/** Sahifa almashganda yumshoq paydo bo'lish. */
+function PageFade({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation();
+  return (
+    <div key={pathname} className="animate-rise">
+      {children}
+    </div>
+  );
 }

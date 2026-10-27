@@ -1,17 +1,16 @@
 import { Link } from "react-router-dom";
 import { siteTitle, useConfig } from "../lib/config";
+import { AtomMark } from "./Physics";
+import { cx } from "./ui";
 
-export function Logo({ to = "/" }: { to?: string }) {
+export function Logo({ to = "/", dark }: { to?: string; dark?: boolean }) {
   const config = useConfig();
   return (
-    <Link to={to} className="flex items-center gap-2.5 font-semibold text-ink">
-      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-600 text-white shadow-sm">
-        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-          <path d="M22 10 12 5 2 10l10 5 10-5z" />
-          <path d="M6 12v5c3 2 9 2 12 0v-5" />
-        </svg>
+    <Link to={to} className={cx("group flex min-w-0 items-center gap-2.5", dark ? "text-white" : "text-ink")}>
+      <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-cosmos-900 text-brand-300 shadow-[0_6px_16px_-6px_rgb(67_83_240/0.7)] ring-1 ring-white/10">
+        <AtomMark className="h-6 w-6 transition-transform duration-700 group-hover:rotate-180" />
       </span>
-      <span className="truncate">{siteTitle(config)}</span>
+      <span className="truncate font-display text-[13px] sm:text-[15px] font-semibold tracking-tight">{siteTitle(config)}</span>
     </Link>
   );
 }

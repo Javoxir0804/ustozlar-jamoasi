@@ -8,7 +8,31 @@ import { useAuth } from "../../lib/auth";
 export type LeaderRow = { userId: string; fullName: string; region: string | null; institution: string | null; bestPct: number; finishedAt: string };
 type Board = { subject: { id: string; name: string }; rows: LeaderRow[] };
 
-const MEDAL = ["bg-amber-400 text-white", "bg-slate-400 text-white", "bg-orange-400 text-white"];
+const MEDAL = ["bg-gradient-to-br from-amber-300 to-amber-500 text-white shadow-[0_4px_12px_-4px_rgb(245_158_11/0.8)]", "bg-gradient-to-br from-slate-300 to-slate-500 text-white", "bg-gradient-to-br from-orange-300 to-orange-500 text-white"];
+
+/** Birinchi uchlik: shohsupa ko'rinishida (2, 1, 3 tartibida). */
+function Podium({ rows }: { rows: LeaderRow[] }) {
+  const order = [1, 0, 2];
+  const heights = ["h-28", "h-20", "h-14"];
+  return (
+    <div className="bg-cosmos relative overflow-hidden px-4 pt-8 text-white">
+      <div className="bg-grid-dark mask-fade absolute inset-0" />
+      <div className="relative mx-auto grid max-w-md grid-cols-3 items-end gap-3">
+        {order.map((i) => {
+          const r = rows[i];
+          return (
+            <div key={r.userId} className="flex animate-rise flex-col items-center text-center" style={{ animationDelay: `${i * 120}ms` }}>
+              <span className={cx("flex h-10 w-10 items-center justify-center rounded-full font-display text-sm font-semibold", MEDAL[i])}>{i + 1}</span>
+              <p className="mt-2 line-clamp-2 text-xs font-semibold leading-tight sm:text-sm">{r.fullName}</p>
+              <p className="font-mono text-xs text-ion">{r.bestPct}%</p>
+              <div className={cx("mt-2 w-full rounded-t-xl border border-b-0 border-white/15 bg-white/10 backdrop-blur", heights[i])} />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export function LeaderTable({ rows }: { rows: LeaderRow[] }) {
   const { user } = useAuth();
@@ -24,7 +48,7 @@ export function LeaderTable({ rows }: { rows: LeaderRow[] }) {
             </span>
             <span className="block truncate text-xs text-muted">{[r.region, r.institution].filter(Boolean).join(" · ") || "—"}</span>
           </span>
-          <span className="shrink-0 text-base font-semibold tabular-nums">{r.bestPct}%</span>
+          <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-brand-700">{r.bestPct}%</span>
         </li>
       ))}
     </ol>
@@ -60,9 +84,10 @@ export default function Rating() {
           {board && (
             <Card className="overflow-hidden">
               <div className="border-b border-line px-5 py-3.5">
-                <h2 className="font-semibold">{board.subject.name}</h2>
+                <h2 className="font-display font-semibold">{board.subject.name}</h2>
                 <p className="text-xs text-muted">Har bir talabaning eng yaxshi natijasi olinadi; teng bo'lsa oldin topshirgan yuqorida turadi.</p>
               </div>
+              {board.rows.length >= 3 && <Podium rows={board.rows.slice(0, 3)} />}
               <LeaderTable rows={board.rows} />
             </Card>
           )}

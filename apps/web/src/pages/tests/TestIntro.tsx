@@ -50,7 +50,7 @@ export default function TestIntro() {
       </Link>
       <Card className="p-6 sm:p-8">
         <Badge tone="blue">{t.subject.name}</Badge>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">{t.title}</h1>
+        <h1 className="font-display mt-2 text-2xl font-semibold tracking-tight">{t.title}</h1>
         {t.description && (
           <div className="mt-3">
             <Markdown>{t.description}</Markdown>
@@ -115,7 +115,7 @@ export default function TestIntro() {
       </Card>
       {top.length > 0 && (
         <Card className="mt-6 overflow-hidden">
-          <h2 className="border-b border-line px-5 py-3.5 font-semibold">Top 10</h2>
+          <h2 className="font-display border-b border-line px-5 py-3.5 font-semibold">Top 10</h2>
           <LeaderTable rows={top} />
         </Card>
       )}

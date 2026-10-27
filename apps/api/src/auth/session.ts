@@ -15,6 +15,21 @@ declare global {
 
 export const signToken = (userId: string) => jwt.sign({ sub: userId }, env.jwtSecret, { expiresIn: "30d" });
 
+/** Bitta video fayl uchun qisqa muddatli havola tokeni: nusxa olingan havola bir necha soatda ishlamay qoladi va boshqa fayllarni ochmaydi. */
+export const signMediaToken = (userId: string, fileId: string) => jwt.sign({ sub: userId, fid: fileId, typ: "media" }, env.jwtSecret, { expiresIn: "4h" });
+
+/** Media token: faqat o'z faylini ochadi. Muvaffaqiyatsiz bo'lsa null. */
+export async function userFromMediaToken(token: string, fileId: string) {
+  try {
+    const p = jwt.verify(token, env.jwtSecret) as { sub: string; fid?: string; typ?: string };
+    if (p.typ !== "media" || p.fid !== fileId) return null;
+    const user = await prisma.user.findUnique({ where: { id: p.sub } });
+    return user && user.status !== "BLOCKED" ? user : null;
+  } catch {
+    return null;
+  }
+}
+
 function tokenOf(req: Request) {
   const header = req.headers.authorization ?? "";
   if (header.startsWith("Bearer ")) return header.slice(7);
@@ -25,7 +40,10 @@ function tokenOf(req: Request) {
 async function loadUser(token: string) {
   let sub: string;
   try {
-    sub = (jwt.verify(token, env.jwtSecret) as { sub: string }).sub;
+    const p = jwt.verify(token, env.jwtSecret) as { sub: string; typ?: string };
+    // Video havolasidagi token sessiya o'rnida ishlatilmasin
+    if (p.typ) throw new Error("not a session token");
+    sub = p.sub;
   } catch {
     throw unauthorized("Sessiya tugagan, qayta kiring");
   }

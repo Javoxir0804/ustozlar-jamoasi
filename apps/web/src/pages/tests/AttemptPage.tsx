@@ -286,11 +286,17 @@ function ResultView({ view }: { view: View }) {
       </Link>
       <Card className="p-6 text-center sm:p-8">
         <p className="text-sm text-muted">{view.test.subject.name}</p>
-        <h1 className="mt-1 text-xl font-semibold">{view.test.title}</h1>
+        <h1 className="mt-1 font-display text-xl font-semibold">{view.test.title}</h1>
         <div className="relative mx-auto mt-6 h-36 w-36">
           <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90">
             <circle cx="18" cy="18" r="15.9" fill="none" stroke="#e2e8f0" strokeWidth="3" />
-            <circle cx="18" cy="18" r="15.9" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeDasharray={`${pct} 100`} className={tone} />
+            <defs>
+              <linearGradient id="ring" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0%" stopColor="#5b6cff" />
+                <stop offset="100%" stopColor="#22d3ee" />
+              </linearGradient>
+            </defs>
+            <circle cx="18" cy="18" r="15.9" fill="none" stroke={pct >= 40 ? "url(#ring)" : "currentColor"} strokeWidth="3" strokeLinecap="round" strokeDasharray={`${pct} 100`} className={cx(tone, "transition-[stroke-dasharray] duration-1000")} />
           </svg>
           <span className={cx("absolute inset-0 flex items-center justify-center text-2xl font-bold tabular-nums", tone)}>{pct}%</span>
         </div>
@@ -332,7 +338,7 @@ function ResultView({ view }: { view: View }) {
       {view.reveal ? (
         <div className="mt-8">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Javoblar tahlili</h2>
+            <h2 className="font-display text-lg font-semibold">Javoblar tahlili</h2>
             <div className="flex gap-1 rounded-lg bg-slate-100 p-1 text-sm">
               {(["all", "wrong"] as const).map((f) => (
                 <button key={f} onClick={() => setFilter(f)} className={cx("rounded-md px-3 py-1 font-medium", filter === f ? "bg-white shadow-sm" : "text-slate-500")}>

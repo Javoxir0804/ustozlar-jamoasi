@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Markdown } from "../../components/Markdown";
+import { PhysicsCover } from "../../components/Physics";
 import { IconCheck, IconLeft, IconLock, IconPlay } from "../../components/icons";
 import { Alert, Badge, Button, Card, PageLoader } from "../../components/ui";
 import { api, ApiError, fmtDate } from "../../lib/api";
@@ -52,7 +53,7 @@ export default function CoursePage() {
               <Badge tone="blue">{c.subject.name}</Badge>
               {!c.isPaid && <Badge tone="green">Bepul</Badge>}
             </div>
-            <h1 className="text-2xl font-semibold tracking-tight">{c.title}</h1>
+            <h1 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">{c.title}</h1>
           </div>
           {c.description && (
             <Card className="p-5">
@@ -62,8 +63,9 @@ export default function CoursePage() {
           <div className="space-y-4">
             {c.modules.map((m, mi) => (
               <Card key={m.id} className="overflow-hidden">
-                <h2 className="border-b border-line bg-slate-50 px-4 py-3 text-sm font-semibold">
-                  {mi + 1}. {m.title}
+                <h2 className="font-display bg-grid flex items-center gap-3 border-b border-line bg-slate-50 px-4 py-3 text-sm font-semibold">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-cosmos-900 font-mono text-xs text-ion">{String(mi + 1).padStart(2, "0")}</span>
+                  {m.title}
                 </h2>
                 <ul className="divide-y divide-line">
                   {m.lessons.map((l) => {
@@ -88,7 +90,7 @@ export default function CoursePage() {
         </div>
         <div>
           <Card className="sticky top-20 overflow-hidden">
-            {c.coverUrl && <img src={c.coverUrl} alt="" className="aspect-[16/9] w-full object-cover" />}
+            {c.coverUrl ? <img src={c.coverUrl} alt="" className="aspect-[16/9] w-full object-cover" /> : <div className="aspect-[16/9]"><PhysicsCover seed={c.id} /></div>}
             <div className="space-y-4 p-5">
               <p className="text-sm text-muted">
                 {c.modules.length} modul · {all.length} dars
@@ -104,7 +106,7 @@ export default function CoursePage() {
                 <>
                   <div>
                     <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-                      <div className="h-full rounded-full bg-emerald-500" style={{ width: `${pct}%` }} />
+                      <div className="h-full rounded-full bg-gradient-to-r from-brand-500 to-ion" style={{ width: `${pct}%` }} />
                     </div>
                     <p className="mt-1.5 text-xs text-muted">
                       {done} / {all.length} dars tugatildi

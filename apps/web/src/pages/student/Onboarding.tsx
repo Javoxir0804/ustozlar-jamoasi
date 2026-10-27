@@ -16,7 +16,7 @@ export default function Onboarding() {
         <Logo />
       </div>
       <Card className="p-6 sm:p-8">
-        <h1 className="text-xl font-semibold">Ro'yxatdan o'tish</h1>
+        <h1 className="font-display text-xl font-semibold">Ro'yxatdan o'tish</h1>
         <p className="mt-1 text-sm text-muted">Ma'lumotlaringizni bir marta to'ldiring. Ular sertifikat va natijalarda ishlatiladi.</p>
         <div className="mt-6">
           <ProfileForm submitLabel={user.profileCompleted ? "Saqlash" : "Ro'yxatdan o'tish"} onSaved={() => navigate("/cabinet", { replace: true })} />

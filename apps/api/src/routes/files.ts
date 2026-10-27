@@ -1,7 +1,7 @@
 // Fayllar bazada saqlanadi. IMAGE ochiq, MATERIAL faqat kursga ruxsati borlarga, PRIVATE faqat adminga.
 import express, { Router } from "express";
 import { prisma, type FileKind } from "@edu/db";
-import { optionalAuth, requireAdmin, requireAuth } from "../auth/session.js";
+import { optionalAuth, requireAdmin, requireAuth, userFromMediaToken } from "../auth/session.js";
 import { hasCourseAccess } from "../services/access.js";
 import { badRequest, forbidden, h, notFound, unauthorized } from "../lib/errors.js";
 
@@ -35,6 +35,7 @@ filesRouter.get(
   "/files/:id",
   optionalAuth,
   h(async (req, res) => {
+    if (!req.user && typeof req.query.m === "string") req.user = (await userFromMediaToken(req.query.m, req.params.id)) ?? undefined;
     const f = await prisma.file.findUnique({ where: { id: req.params.id } });
     if (!f) throw notFound("Fayl topilmadi");
     if (f.kind !== "IMAGE") {

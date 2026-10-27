@@ -34,7 +34,7 @@ export default function Verify() {
 
   return (
     <div className="mx-auto max-w-xl">
-      <h1 className="text-2xl font-semibold tracking-tight">Sertifikatni tekshirish</h1>
+      <h1 className="font-display text-2xl font-semibold tracking-tight">Sertifikatni tekshirish</h1>
       <p className="mt-1 text-sm text-muted">Sertifikatdagi raqamni kiriting yoki QR kodni telefon kamerasi bilan skanerlang.</p>
       <form onSubmit={submit} className="mt-5 flex gap-2">
         <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="UJ-2026-XXXXXXXX" className="font-mono uppercase" aria-label="Sertifikat raqami" />

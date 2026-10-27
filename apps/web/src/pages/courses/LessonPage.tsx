@@ -67,7 +67,7 @@ export default function LessonPage() {
       <p className="text-xs font-medium uppercase tracking-wide text-muted">
         {l.module.title} · {l.position.index}/{l.position.total}
       </p>
-      <h1 className="mb-4 mt-1 text-2xl font-semibold tracking-tight">{l.title}</h1>
+      <h1 className="font-display mb-4 mt-1 text-2xl font-semibold tracking-tight">{l.title}</h1>
       <VideoPlayer video={l.video} title={l.title} />
       {l.content && (
         <Card className="mt-6 p-5 sm:p-6">
@@ -76,7 +76,7 @@ export default function LessonPage() {
       )}
       {l.files.length > 0 && (
         <Card className="mt-6 p-5">
-          <h2 className="mb-3 text-sm font-semibold">Dars materiallari</h2>
+          <h2 className="font-display mb-3 text-sm font-semibold">Dars materiallari</h2>
           <ul className="space-y-2">
             {l.files.map((f) => (
               <li key={f.id}>

@@ -87,7 +87,7 @@ describe("talaba: kurslar va ruxsat", () => {
   it("tanishtiruv darsi ochiq, qolgani va fayli yopiq", async () => {
     const p = await request(app).get(`/api/lessons/${ids.preview}`).set(as(student));
     expect(p.status).toBe(200);
-    expect(p.body.video).toEqual({ kind: "iframe", src: "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?rel=0" });
+    expect(p.body.video).toEqual({ kind: "youtube", id: "dQw4w9WgXcQ" });
     expect((await request(app).get(`/api/lessons/${ids.lesson}`).set(as(student))).status).toBe(403);
     expect((await request(app).get(`/api/files/${ids.file}`).set(as(student))).status).toBe(403);
     expect((await request(app).get(`/api/files/${ids.file}`)).status).toBe(401);
@@ -108,6 +108,20 @@ describe("talaba: kurslar va ruxsat", () => {
     expect(mine.body.find((x: { id: string }) => x.id === ids.course).completedCount).toBe(1);
     // Boshqa talabaga ochilmagan
     expect((await request(app).get(`/api/lessons/${ids.lesson}`).set(as(outsider))).status).toBe(403);
+  });
+
+  it("yuklangan video qisqa muddatli, faqat o'z fayliga bog'langan havola bilan beriladi", async () => {
+    await request(app).patch(`/api/admin/lessons/${ids.lesson}`).set(as(admin)).send({ videoUrl: `/api/files/${ids.file}` });
+    const l = await request(app).get(`/api/lessons/${ids.lesson}`).set(as(student));
+    expect(l.body.video.kind).toBe("file");
+    const src: string = l.body.video.src;
+    expect(src).toMatch(new RegExp(`^/api/files/${ids.file}\\?m=`));
+    expect((await request(app).get(src)).status).toBe(200);
+    const m = src.split("?m=")[1];
+    // Boshqa faylni ochmaydi va sessiya o'rnida ishlamaydi
+    expect((await request(app).get(`/api/files/${ids.image}x?m=${m}`)).status).toBe(404);
+    expect((await request(app).get("/api/auth/me").set(as(m))).status).toBe(401);
+    await request(app).patch(`/api/admin/lessons/${ids.lesson}`).set(as(admin)).send({ videoUrl: null });
   });
 
   it("muddati o'tgan ruxsat ishlamaydi, bekor qilingan ham", async () => {

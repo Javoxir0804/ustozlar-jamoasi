@@ -1,10 +1,17 @@
 // Talaba va mehmon uchun kurslar: katalog ochiq, dars mazmuni faqat ruxsat bilan (yoki tanishtiruv darsi).
 import { Router } from "express";
 import { prisma, type User } from "@edu/db";
-import { optionalAuth, requireAuth, requireProfile } from "../auth/session.js";
+import { optionalAuth, requireAuth, requireProfile, signMediaToken } from "../auth/session.js";
 import { accessibleCourseIds, hasCourseAccess } from "../services/access.js";
 import { forbidden, h, notFound } from "../lib/errors.js";
-import { videoEmbed } from "../lib/video.js";
+import { videoEmbed, type VideoEmbed } from "../lib/video.js";
+
+/** Yuklangan video uchun sessiya tokeni o'rniga shu faylga bog'langan qisqa muddatli havola. */
+function protectVideo(v: VideoEmbed | null, userId: string): VideoEmbed | null {
+  if (v?.kind !== "file") return v;
+  const m = /^\/api\/files\/([\w-]+)$/.exec(v.src);
+  return m ? { kind: "file", src: `${v.src}?m=${signMediaToken(userId, m[1])}` } : v;
+}
 
 export const coursesRouter = Router();
 
@@ -113,7 +120,7 @@ coursesRouter.get(
       id: l.id,
       title: l.title,
       content: l.content,
-      video: videoEmbed(l.videoUrl),
+      video: protectVideo(videoEmbed(l.videoUrl), req.user!.id),
       durationSec: l.durationSec,
       completed,
       course: { id: course.id, title: course.title },

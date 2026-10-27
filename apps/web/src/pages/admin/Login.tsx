@@ -1,6 +1,7 @@
 // Admin kirishi: login va parol.
 import { useState, type FormEvent } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
+import { Atom, FloatingFormulas } from "../../components/Physics";
 import { Logo } from "../../components/Logo";
 import { Alert, Button, Card, Field, Input, PageLoader } from "../../components/ui";
 import { api, ApiError, type User } from "../../lib/api";
@@ -34,13 +35,16 @@ export default function AdminLogin() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-      <div className="w-full max-w-sm">
+    <div className="bg-cosmos relative flex min-h-screen items-center justify-center overflow-hidden px-4">
+      <div className="bg-grid-dark mask-fade absolute inset-0" />
+      <FloatingFormulas />
+      <Atom className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 opacity-40" />
+      <div className="relative w-full max-w-sm animate-rise">
         <div className="mb-6 flex justify-center">
-          <Logo />
+          <Logo dark />
         </div>
-        <Card className="p-6">
-          <h1 className="text-lg font-semibold">Admin panelga kirish</h1>
+        <Card className="p-7 shadow-2xl">
+          <h1 className="font-display text-lg font-semibold">Admin panelga kirish</h1>
           <form onSubmit={submit} className="mt-5 space-y-4">
             {err && <Alert>{err}</Alert>}
             <Field label="Login">

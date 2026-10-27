@@ -10,6 +10,9 @@
     "test": "echo 'web: avtomatik test yo‘q'"
   },
   "dependencies": {
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
+    "@fontsource-variable/manrope": "^5.3.0",
+    "@fontsource-variable/unbounded": "^5.3.0",
     "katex": "~0.16.47",
     "react": "18.3.1",
     "react-dom": "18.3.1",

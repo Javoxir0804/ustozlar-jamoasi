@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { CourseGrid } from "../../components/CourseGrid";
 import type { CourseCard } from "../courses/types";
-import { PageHeader } from "../../components/layouts";
+import { Atom } from "../../components/Physics";
 import { ProfileForm } from "../../components/ProfileForm";
 import { IconAward, IconEdit } from "../../components/icons";
 import { Badge, Button, Card, EmptyState, useToast } from "../../components/ui";
@@ -22,6 +22,8 @@ export default function Cabinet() {
     api<typeof certs>("/me/certificates").then(setCerts, () => setCerts([]));
   }, []);
   if (!user) return null;
+  const scores = (attempts ?? []).filter((x) => x.status !== "IN_PROGRESS" && x.scorePct != null).map((x) => x.scorePct as number);
+  const best = scores.length ? Math.max(...scores) : null;
   const rows: [string, string | null][] = [
     ["Telefon", user.phone],
     ["Viloyat", user.region],
@@ -34,10 +36,31 @@ export default function Cabinet() {
   ];
   return (
     <>
-      <PageHeader title={`Salom, ${user.firstName || "talaba"}!`} subtitle="Shaxsiy kabinet" />
+      <div className="bg-cosmos relative mb-8 overflow-hidden rounded-3xl p-6 text-white sm:p-8">
+        <div className="bg-grid-dark mask-fade absolute inset-0" />
+        <Atom className="pointer-events-none absolute -right-12 -top-12 h-56 w-56 opacity-60 sm:h-72 sm:w-72" />
+        <div className="relative">
+          <p className="font-mono text-xs uppercase tracking-[0.2em] text-brand-200">Shaxsiy kabinet</p>
+          <h1 className="mt-2 font-display text-2xl font-semibold sm:text-3xl">Salom, {user.firstName || "talaba"}!</h1>
+          <dl className="mt-6 grid max-w-xl grid-cols-3 gap-3">
+            {(
+              [
+                ["Kurslar", courses?.length ?? 0],
+                ["Eng yaxshi natija", best == null ? "—" : `${best}%`],
+                ["Sertifikat", certs.length],
+              ] as const
+            ).map(([k, v]) => (
+              <div key={k} className="rounded-2xl border border-white/10 bg-white/5 p-3 backdrop-blur">
+                <dd className="truncate font-display text-lg font-semibold tabular-nums sm:text-2xl">{v}</dd>
+                <dt className="mt-0.5 text-[11px] text-slate-300 sm:text-xs">{k}</dt>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </div>
       <section className="mb-8">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Kurslarim</h2>
+          <h2 className="font-display text-lg font-semibold">Kurslarim</h2>
           <Link to="/courses" className="text-sm font-medium text-brand-700 hover:underline">
             Barcha kurslar
           </Link>
@@ -62,7 +85,7 @@ export default function Cabinet() {
         <Card className="p-6 lg:col-span-2">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold">{fullName(user)}</h2>
+              <h2 className="font-display text-lg font-semibold">{fullName(user)}</h2>
               <Badge tone="green">Faol</Badge>
             </div>
             {!editing && (
@@ -94,7 +117,7 @@ export default function Cabinet() {
         <div className="space-y-6">
           {certs.length > 0 && (
             <Card className="overflow-hidden">
-              <h2 className="border-b border-line px-5 py-3.5 font-semibold">Sertifikatlarim</h2>
+              <h2 className="font-display border-b border-line px-5 py-3.5 font-semibold">Sertifikatlarim</h2>
               <ul className="divide-y divide-line">
                 {certs.map((c) => (
                   <li key={c.number} className="flex items-center gap-3 px-5 py-3">
@@ -115,7 +138,7 @@ export default function Cabinet() {
           )}
           <Card className="overflow-hidden">
             <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
-              <h2 className="font-semibold">Test natijalari</h2>
+              <h2 className="font-display font-semibold">Test natijalari</h2>
               <Link to="/tests" className="text-sm font-medium text-brand-700 hover:underline">
                 Testlar
               </Link>

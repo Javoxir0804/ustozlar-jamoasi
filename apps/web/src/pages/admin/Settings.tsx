@@ -17,7 +17,7 @@ function Section({ title, subtitle, onSubmit, busy, children }: { title: string;
     <Card className="p-6">
       <form onSubmit={onSubmit} className="space-y-4">
         <div>
-          <h2 className="font-semibold">{title}</h2>
+          <h2 className="font-display font-semibold">{title}</h2>
           {subtitle && <p className="mt-0.5 text-sm text-muted">{subtitle}</p>}
         </div>
         {children}
@@ -122,7 +122,7 @@ export default function SettingsPage() {
         </Section>
 
         <Card className="p-6">
-          <h2 className="font-semibold">Majburiy obuna kanallari</h2>
+          <h2 className="font-display font-semibold">Majburiy obuna kanallari</h2>
           <p className="mt-0.5 text-sm text-muted">Ro'yxat bo'sh bo'lsa, bot obunani tekshirmaydi. Bot kanalda admin bo'lishi kerak.</p>
           <ul className="mt-4 divide-y divide-line rounded-lg border border-line">
             {channels.length === 0 && <li className="px-4 py-3 text-sm text-muted">Kanal qo'shilmagan</li>}

@@ -125,7 +125,7 @@ export default function Certificates() {
       </Card>
 
       <div className="mb-3 mt-8 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">Berilgan sertifikatlar ({list.length})</h2>
+        <h2 className="font-display text-lg font-semibold">Berilgan sertifikatlar ({list.length})</h2>
         <div className="relative w-full sm:w-72">
           <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Raqam, ism yoki test" className="pl-9" />

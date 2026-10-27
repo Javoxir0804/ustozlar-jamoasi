@@ -24,7 +24,7 @@ export function createApp(opts: { beforeApi?: (app: express.Express) => void; af
       contentSecurityPolicy: {
         directives: {
           // Telegram Web App SDK va Login Widget; KaTeX inline uslublari; video pleyerlar
-          scriptSrc: ["'self'", "https://telegram.org"],
+          scriptSrc: ["'self'", "https://telegram.org", "https://www.youtube.com", "https://s.ytimg.com"],
           frameSrc: ["https://oauth.telegram.org", "https://www.youtube.com", "https://www.youtube-nocookie.com", "https://player.vimeo.com", "https://iframe.mediadelivery.net"],
           styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
           fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
@@ -35,6 +35,8 @@ export function createApp(opts: { beforeApi?: (app: express.Express) => void; af
         },
       },
       frameguard: false,
+      // YouTube pleyeri Referer sarlavhasisiz ishlamaydi (Error 153)
+      referrerPolicy: { policy: "strict-origin-when-cross-origin" },
     }),
   );
   // Kirish Bearer token orqali (cookie yo'q), shuning uchun CORS ochiq bo'lishi xavfsiz
