@@ -3,6 +3,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "@att/db";
 import { requireBot } from "../auth/jwt.js";
+import { env } from "../env.js";
 import { h, notFound } from "../lib/errors.js";
 import { activeSubscriptionEnd } from "../services/access.js";
 import { renderCertificatePdf } from "../services/certificates.js";
@@ -33,10 +34,11 @@ botRouter.post(
   h(async (req, res) => {
     const data = profileSchema.extend({ telegramId: z.coerce.bigint(), phone: z.string().min(7).max(20) }).parse(req.body);
     const phone = data.phone.replace(/[^\d+]/g, "");
+    const isAdmin = env.adminTelegramIds.includes(data.telegramId.toString());
     const u = await prisma.user.upsert({
       where: { telegramId: data.telegramId },
-      create: { ...data, phone, registered: true },
-      update: { ...data, phone, registered: true },
+      create: { ...data, phone, registered: true, ...(isAdmin ? { role: "ADMIN" as const } : {}) },
+      update: { ...data, phone, registered: true, ...(isAdmin ? { role: "ADMIN" as const } : {}) },
     });
     res.json(await serializeUser(u));
   }),

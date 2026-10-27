@@ -28,7 +28,17 @@ pnpm dev:bot
 pnpm test                       # API va bot testlari (PostgreSQL kerak)
 ```
 
-Birinchi adminni yaratish: botda ro'yxatdan o'ting, so'ng bazada `UPDATE "User" SET role='ADMIN' WHERE phone='+998...';`.
+Birinchi admin: `.env` dagi `ADMIN_TELEGRAM_IDS` ga Telegram ID ingizni yozing va botda ro'yxatdan o'ting.
+
+## Render'ga joylash
+
+Bitta veb-xizmat API, sayt va botni (webhook rejimida) birga ishga tushiradi, ma'lumotlar Render PostgreSQL'da.
+
+- Build: `npx -y pnpm@10.28.0 run render:build`
+- Start: `npx -y pnpm@10.28.0 run render:start` (migratsiyalar va namuna ma'lumotlar avtomatik)
+- Muhit o'zgaruvchilari: `DATABASE_URL`, `JWT_SECRET`, `BOT_API_KEY`, `PUBLIC_WEB_URL`, `WEB_ORIGIN`, `API_URL=http://localhost:10000`, `BOT_TOKEN`, `VITE_BOT_USERNAME`, `ADMIN_CHAT_ID`, `ADMIN_TELEGRAM_IDS`.
+- `ADMIN_TELEGRAM_IDS` dagi foydalanuvchi botda ro'yxatdan o'tganda avtomatik admin bo'ladi.
+- Saytdagi "Telegram orqali kirish" ishlashi uchun BotFather'da `/setdomain` bilan sayt domenini kiriting.
 
 ## Muhim qoidalar
 
