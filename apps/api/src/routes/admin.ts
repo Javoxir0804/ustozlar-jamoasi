@@ -145,14 +145,47 @@ adminRouter.delete("/channels/:id", h(async (req, res) => res.json(await prisma.
 adminRouter.get(
   "/users",
   h(async (req, res) => {
-    const q = typeof req.query.q === "string" ? req.query.q : undefined;
+    const q = typeof req.query.q === "string" ? req.query.q.trim() : undefined;
+    const role = typeof req.query.role === "string" ? req.query.role : undefined;
     const page = Math.max(1, Number(req.query.page ?? 1));
-    const where = q ? { OR: [{ firstName: { contains: q, mode: "insensitive" as const } }, { lastName: { contains: q, mode: "insensitive" as const } }, { phone: { contains: q } }] } : {};
+    const where: any = {};
+    if (q) {
+      where.OR = [
+        { firstName: { contains: q, mode: "insensitive" } },
+        { lastName: { contains: q, mode: "insensitive" } },
+        { phone: { contains: q } },
+        { username: { contains: q, mode: "insensitive" } },
+      ];
+    }
+    if (role && ["ADMIN", "TEACHER", "STUDENT"].includes(role)) {
+      where.role = role;
+    }
     const [items, total] = await Promise.all([
-      prisma.user.findMany({ where, skip: (page - 1) * 25, take: 25, orderBy: { createdAt: "desc" } }),
+      prisma.user.findMany({ where, skip: (page - 1) * 50, take: 50, orderBy: { createdAt: "desc" } }),
       prisma.user.count({ where }),
     ]);
     res.json({ items: items.map((u) => ({ ...u, telegramId: u.telegramId?.toString() ?? null })), total });
+  }),
+);
+
+adminRouter.patch(
+  "/users/:id",
+  h(async (req, res) => {
+    const updateSchema = z.object({
+      role: z.enum(["ADMIN", "TEACHER", "STUDENT"]).optional(),
+      status: z.enum(["ACTIVE", "BLOCKED"]).optional(),
+      firstName: z.string().optional(),
+      lastName: z.string().optional(),
+      phone: z.string().nullish(),
+      school: z.string().nullish(),
+    });
+    const data = updateSchema.parse(req.body);
+    const updated = await prisma.user.update({
+      where: { id: req.params.id },
+      data,
+    });
+    await audit(req.user!.id, "user.update", "User", req.params.id, data);
+    res.json({ ...updated, telegramId: updated.telegramId?.toString() ?? null });
   }),
 );
 

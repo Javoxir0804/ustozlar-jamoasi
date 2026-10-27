@@ -88,7 +88,65 @@ async function main() {
     create: { key: "payment", value: { card: "0000 0000 0000 0000", holder: "Karta egasi F.I.O." } },
   });
 
-  console.log("Seed tayyor");
+  // Demo hisoblar: Admin, Ustoz va Talaba
+  const cryptoModule = await import("node:crypto");
+  const hash = (pwd: string) => {
+    const salt = "attestatsiya_salt_2026";
+    const h = cryptoModule.default.scryptSync(pwd, salt, 64).toString("hex");
+    return `${salt}:${h}`;
+  };
+
+  await prisma.user.upsert({
+    where: { username: "admin" },
+    update: { passwordHash: hash("admin123"), role: "ADMIN", registered: true },
+    create: {
+      username: "admin",
+      passwordHash: hash("admin123"),
+      firstName: "Bosh",
+      lastName: "Administrator",
+      role: "ADMIN",
+      registered: true,
+      phone: "+998900000001",
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { username: "ustoz" },
+    update: { passwordHash: hash("ustoz123"), role: "TEACHER", registered: true },
+    create: {
+      username: "ustoz",
+      passwordHash: hash("ustoz123"),
+      firstName: "Zafar",
+      lastName: "O'qituvchi",
+      role: "TEACHER",
+      registered: true,
+      phone: "+998900000002",
+      school: "1-sonli maktab",
+      grade: "Oliy toifa",
+      region: "Toshkent shahri",
+      district: "Yunusobod tumani",
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { username: "talaba" },
+    update: { passwordHash: hash("talaba123"), role: "STUDENT", registered: true },
+    create: {
+      username: "talaba",
+      passwordHash: hash("talaba123"),
+      firstName: "Azizbek",
+      lastName: "O'quvchi",
+      role: "STUDENT",
+      registered: true,
+      phone: "+998900000003",
+      school: "1-sonli maktab",
+      grade: "11-sinf",
+      region: "Toshkent shahri",
+      district: "Yunusobod tumani",
+    },
+  });
+
+  console.log("Seed tayyor: admin (admin/admin123), ustoz (ustoz/ustoz123), talaba (talaba/talaba123)");
 }
 
 main().finally(() => prisma.$disconnect());

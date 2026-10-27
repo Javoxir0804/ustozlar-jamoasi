@@ -7,6 +7,24 @@ declare global {
 
 const TOKEN_KEY = "att_token";
 
+export type Role = "ADMIN" | "TEACHER" | "STUDENT";
+
+export interface User {
+  id: string;
+  username: string | null;
+  firstName: string;
+  lastName: string;
+  role: Role;
+  phone?: string | null;
+  school?: string | null;
+  grade?: string | null;
+  region?: string | null;
+  district?: string | null;
+  address?: string | null;
+  status?: "ACTIVE" | "BLOCKED";
+  subscriptionEndsAt?: string | null;
+}
+
 export class ApiError extends Error {
   constructor(public status: number, public code: string, message: string) {
     super(message);
@@ -20,9 +38,18 @@ export const getToken = () => {
     return null;
   }
 };
-const setToken = (t: string) => {
+
+export const setToken = (t: string) => {
   try {
     localStorage.setItem(TOKEN_KEY, t);
+  } catch {
+    /* maxfiy rejimda saqlanmaydi */
+  }
+};
+
+export const removeToken = () => {
+  try {
+    localStorage.removeItem(TOKEN_KEY);
   } catch {
     /* maxfiy rejimda saqlanmaydi */
   }
@@ -40,20 +67,102 @@ export async function api<T>(path: string, init: { method?: string; body?: unkno
   return data as T;
 }
 
-/** Bot ichida ochilgan bo'lsa initData orqali kiradi. */
-export async function ensureLogin(): Promise<boolean> {
+/** Hozirgi kirgan foydalanuvchi ma'lumotlarini olish */
+let cachedUser: User | null = null;
+
+export async function getMe(): Promise<User | null> {
+  const token = getToken();
+  if (!token) return null;
+  try {
+    const user = await api<User>("/auth/me");
+    cachedUser = user;
+    return user;
+  } catch (e) {
+    if (e instanceof ApiError && (e.status === 401 || e.status === 403)) {
+      removeToken();
+      cachedUser = null;
+    }
+    return null;
+  }
+}
+
+export function getCurrentUser(): User | null {
+  return cachedUser;
+}
+
+export function setCurrentUser(u: User | null) {
+  cachedUser = u;
+}
+
+/** Bot ichida ochilgan bo'lsa initData orqali kiradi; aks holda tokenni tekshiradi */
+export async function ensureLogin(): Promise<User | null> {
   const tg = window.Telegram?.WebApp;
   if (tg?.initData) {
     tg.ready();
     tg.expand();
-    const { token } = await api<{ token: string }>("/auth/telegram/webapp", { method: "POST", body: { initData: tg.initData } });
-    setToken(token);
-    return true;
+    try {
+      const { token, user } = await api<{ token: string; user: User }>("/auth/telegram/webapp", {
+        method: "POST",
+        body: { initData: tg.initData },
+      });
+      setToken(token);
+      cachedUser = user;
+      return user;
+    } catch {
+      // Webapp orqali xato bo'lsa token borligini tekshiramiz
+    }
   }
-  return !!getToken();
+
+  const token = getToken();
+  if (!token) return null;
+
+  return await getMe();
+}
+
+/** Login va parol orqali kirish */
+export async function loginWithCredentials(login: string, password: string): Promise<User> {
+  const res = await api<{ token: string; user: User }>("/auth/login", {
+    method: "POST",
+    body: { login, password },
+  });
+  setToken(res.token);
+  cachedUser = res.user;
+  return res.user;
+}
+
+/** Yangi hisob ochish (Ustoz yoki O'quvchi) */
+export interface RegisterData {
+  username: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  role: "TEACHER" | "STUDENT";
+  phone?: string;
+  school?: string;
+  grade?: string;
+  region?: string;
+  district?: string;
+}
+
+export async function registerWithCredentials(data: RegisterData): Promise<User> {
+  const res = await api<{ token: string; user: User }>("/auth/register", {
+    method: "POST",
+    body: data,
+  });
+  setToken(res.token);
+  cachedUser = res.user;
+  return res.user;
 }
 
 export async function loginWithWidget(data: Record<string, string | number>) {
-  const { token } = await api<{ token: string }>("/auth/telegram/widget", { method: "POST", body: data });
-  setToken(token);
+  const res = await api<{ token: string; user: User }>("/auth/telegram/widget", { method: "POST", body: data });
+  setToken(res.token);
+  cachedUser = res.user;
+  return res.user;
+}
+
+export function logout() {
+  removeToken();
+  cachedUser = null;
+  window.location.href = "/login";
 }
