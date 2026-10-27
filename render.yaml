@@ -15,17 +15,11 @@ services:
           property: connectionString
       - key: JWT_SECRET
         generateValue: true
-      - key: BOT_API_KEY
-        generateValue: true
       - key: BOT_TOKEN
         sync: false
       - key: BOT_USERNAME
         value: ustozlar_jamoasibot
-      - key: VITE_BOT_USERNAME
-        value: ustozlar_jamoasibot
       - key: ADMIN_CHAT_ID
-        sync: false
-      - key: ADMIN_TELEGRAM_IDS
         sync: false
       - key: ADMIN_USERNAME
         value: admin
@@ -39,7 +33,7 @@ services:
 
 databases:
   - name: ustozlar-db
-    databaseName: attestatsiya
-    user: att
+    databaseName: ustozlar
+    user: ustoz
     plan: free
     region: frankfurt

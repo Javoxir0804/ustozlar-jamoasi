@@ -1,33 +1,19 @@
 import { Router } from "express";
-import { prisma } from "@att/db";
-import { h, notFound } from "../lib/errors.js";
-import { lookupCertificate } from "../services/certificates.js";
-import { subjectLeaderboard } from "../services/leaderboard.js";
+import { prisma } from "@edu/db";
+import { env } from "../env.js";
+import { h } from "../lib/errors.js";
+import { REGIONS } from "../services/profile.js";
 
 export const publicRouter = Router();
 
-// Sertifikatni ID orqali tekshirish (QR-kod shu manzilga olib boradi)
-publicRouter.get(
-  "/certificates/:number",
-  h(async (req, res) => {
-    res.json(await lookupCertificate(req.params.number));
-  }),
-);
+export const PUBLIC_SETTINGS = ["site", "contacts", "about"] as const;
 
+// Sayt ochilganda bitta so'rov: bot nomi (Telegram tugmasi uchun), sayt matnlari, aloqa, viloyatlar
 publicRouter.get(
-  "/leaderboard/:subjectId",
-  h(async (req, res) => {
-    res.json(await subjectLeaderboard(req.params.subjectId, Math.min(Number(req.query.limit ?? 10), 100)));
-  }),
-);
-
-// Aloqa, litsey haqida va boshqa ochiq sozlamalar
-const PUBLIC_KEYS = new Set(["contacts", "about", "payment"]);
-publicRouter.get(
-  "/settings/:key",
-  h(async (req, res) => {
-    if (!PUBLIC_KEYS.has(req.params.key)) throw notFound();
-    const s = await prisma.setting.findUnique({ where: { key: req.params.key } });
-    res.json(s?.value ?? null);
+  "/config",
+  h(async (_req, res) => {
+    const rows = await prisma.setting.findMany({ where: { key: { in: [...PUBLIC_SETTINGS] } } });
+    const s = Object.fromEntries(rows.map((r) => [r.key, r.value]));
+    res.json({ botUsername: env.botUsername || null, site: s.site ?? null, contacts: s.contacts ?? null, about: s.about ?? null, regions: REGIONS });
   }),
 );

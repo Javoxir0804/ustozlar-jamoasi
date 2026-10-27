@@ -1,4 +1,4 @@
-// Attestatsiya platformasi — ma'lumotlar bazasi sxemasi.
+// Onlayn ta'lim platformasi: ma'lumotlar bazasi sxemasi (TZ, 6-bo'lim).
 // Sayt, bot va admin panel shu bitta bazadan foydalanadi.
 
 generator client {
@@ -11,9 +11,8 @@ datasource db {
 }
 
 enum Role {
-  ADMIN
-  TEACHER
-  STUDENT
+  ADMIN // ustoz: login va parol bilan kiradi
+  STUDENT // talaba: Telegram orqali kiradi
 }
 
 enum UserStatus {
@@ -22,64 +21,160 @@ enum UserStatus {
 }
 
 model User {
-  id          String     @id @default(cuid())
-  telegramId  BigInt?    @unique
-  username    String?    @unique
-  passwordHash String?
-  firstName   String
-  lastName    String
-  phone       String?    @unique
-  region      String? // viloyat
-  district    String? // tuman
-  address     String?
-  school      String?
-  grade       String? // sinf (yoki ustoz uchun toifa)
-  role        Role       @default(TEACHER)
-  status      UserStatus @default(ACTIVE)
-  // Ro'yxat to'liq yakunlanganmi (bot bosqichma-bosqich to'ldiradi)
-  registered  Boolean    @default(false)
-  lastActiveAt DateTime?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id               String     @id @default(cuid())
+  role             Role       @default(STUDENT)
+  status           UserStatus @default(ACTIVE)
+  // Talaba: Telegram orqali aniqlanadi
+  telegramId       BigInt?    @unique
+  telegramUsername String?
+  // Admin: login va parol (scrypt xesh)
+  login            String?    @unique
+  passwordHash     String?
+  failedLogins     Int        @default(0)
+  lockedUntil      DateTime?
 
-  attempts      Attempt[]
-  subscriptions Subscription[]
-  payments      Payment[]
-  certificates  Certificate[]
-  auditLogs     AuditLog[]
+  firstName        String     @default("")
+  lastName         String     @default("")
+  phone            String?    @unique
+  region           String? // viloyat
+  district         String? // tuman
+  address          String?
+  institution      String? // ta'lim muassasasi
+  grade            String? // sinf yoki kurs
+  // Anketa to'ldirilmaguncha talabaga boshqa bo'limlar ochilmaydi
+  profileCompleted Boolean    @default(false)
+  lastActiveAt     DateTime?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  courseAccess   CourseAccess[] @relation("AccessUser")
+  grantedAccess  CourseAccess[] @relation("AccessGrantedBy")
+  progress       LessonProgress[]
+  attempts       Attempt[]
+  certificates   Certificate[]
+  auditLogs      AuditLog[]
+
+  @@index([role, createdAt])
 }
 
 model Subject {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  order     Int      @default(0)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
 
-  tests    Test[]
-  sections LessonSection[]
+  courses Course[]
+  tests   Test[]
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  subjectId   String
+  subject     Subject  @relation(fields: [subjectId], references: [id])
+  title       String
+  description String?
+  coverFileId String?
+  isPaid      Boolean  @default(true)
+  isPublished Boolean  @default(false)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  modules Module[]
+  access  CourseAccess[]
+  tests   Test[]
+}
+
+model Module {
+  id       String @id @default(cuid())
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title    String
+  order    Int    @default(0)
+
+  lessons Lesson[]
+}
+
+model Lesson {
+  id          String   @id @default(cuid())
+  moduleId    String
+  module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title       String
+  // YouTube, Vimeo, Bunny Stream havolasi yoki yuklangan MP4
+  videoUrl    String?
+  // Konspekt: Markdown + LaTeX formulalar
+  content     String?
+  durationSec Int?
+  // Pullik kurs ichidagi bepul tanishtiruv darsi
+  isPreview   Boolean  @default(false)
+  isPublished Boolean  @default(false)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  files    LessonFile[]
+  progress LessonProgress[]
+}
+
+model LessonFile {
+  id       String @id @default(cuid())
+  lessonId String
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  title    String
+  fileId   String
+  file     File   @relation(fields: [fileId], references: [id])
+  order    Int    @default(0)
+}
+
+// Pullik kursga ruxsatni admin beradi; expiresAt bo'sh bo'lsa muddatsiz
+model CourseAccess {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation("AccessUser", fields: [userId], references: [id], onDelete: Cascade)
+  courseId    String
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  grantedById String?
+  grantedBy   User?     @relation("AccessGrantedBy", fields: [grantedById], references: [id])
+  grantedAt   DateTime  @default(now())
+  expiresAt   DateTime?
+
+  @@unique([userId, courseId])
+}
+
+model LessonProgress {
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId    String
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  completedAt DateTime @default(now())
+
+  @@id([userId, lessonId])
 }
 
 model Test {
-  id              String    @id @default(cuid())
-  subjectId       String
-  subject         Subject   @relation(fields: [subjectId], references: [id])
-  title           String
-  description     String?
-  durationMin     Int       @default(60)
-  questionCount   Int       @default(20) // har urinishda nechta savol beriladi
-  shuffleQuestions Boolean  @default(true)
-  shuffleOptions  Boolean   @default(true)
-  maxAttempts     Int? // null = cheksiz
-  requiresCode    Boolean   @default(false) // yopiq test: kirish kodi yoki parol
-  password        String? // umumiy parol (ixtiyoriy)
-  requiresSubscription Boolean @default(true)
-  opensAt         DateTime?
-  closesAt        DateTime?
-  isActive        Boolean   @default(false)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id               String    @id @default(cuid())
+  subjectId        String
+  subject          Subject   @relation(fields: [subjectId], references: [id])
+  // Kursga bog'langan test faqat shu kursga ruxsati borlarga ochiq
+  courseId         String?
+  course           Course?   @relation(fields: [courseId], references: [id])
+  title            String
+  description      String?
+  durationMin      Int       @default(60)
+  questionCount    Int       @default(20)
+  shuffleQuestions Boolean   @default(true)
+  shuffleOptions   Boolean   @default(true)
+  maxAttempts      Int? // null = cheksiz
+  opensAt          DateTime?
+  closesAt         DateTime?
+  requiresCode     Boolean   @default(false)
+  password         String?
+  showAnswers      Boolean   @default(true)
+  isActive         Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   questions   Question[]
   attempts    Attempt[]
@@ -87,19 +182,19 @@ model Test {
 }
 
 model Question {
-  id        String   @id @default(cuid())
-  testId    String
-  test      Test     @relation(fields: [testId], references: [id], onDelete: Cascade)
-  // Markdown + LaTeX ($...$) formulalar
-  text      String
-  imageUrl  String?
-  order     Int      @default(0)
-  // Statistika (har kecha qayta hisoblanadi)
-  pCorrect  Float? // to'g'ri javoblar ulushi 0..1
-  raschB    Float? // RASH modeli bo'yicha qiyinchilik (logit)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  testId      String
+  test        Test     @relation(fields: [testId], references: [id], onDelete: Cascade)
+  text        String // Markdown + LaTeX
+  imageUrl    String?
+  explanation String?
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+  // Statistika (qayta hisoblanadi)
+  pCorrect    Float?
+  raschB      Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   options Option[]
   answers AttemptAnswer[]
@@ -117,6 +212,20 @@ model Option {
   answers AttemptAnswer[]
 }
 
+model AccessCode {
+  id        String    @id @default(cuid())
+  testId    String
+  test      Test      @relation(fields: [testId], references: [id], onDelete: Cascade)
+  code      String    @unique
+  maxUses   Int       @default(1)
+  usedCount Int       @default(0)
+  expiresAt DateTime?
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  attempts Attempt[]
+}
+
 enum AttemptStatus {
   IN_PROGRESS
   FINISHED
@@ -124,22 +233,22 @@ enum AttemptStatus {
 }
 
 model Attempt {
-  id          String        @id @default(cuid())
-  userId      String
-  user        User          @relation(fields: [userId], references: [id])
-  testId      String
-  test        Test          @relation(fields: [testId], references: [id])
-  status      AttemptStatus @default(IN_PROGRESS)
-  startedAt   DateTime      @default(now())
-  deadlineAt  DateTime // server vaqti bo'yicha tugash
-  finishedAt  DateTime?
-  // Shu urinishda berilgan savollar va variantlar tartibi: [{q, o:[...]}]
-  layout      Json
+  id           String        @id @default(cuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id])
+  testId       String
+  test         Test          @relation(fields: [testId], references: [id])
+  status       AttemptStatus @default(IN_PROGRESS)
+  startedAt    DateTime      @default(now())
+  deadlineAt   DateTime
+  finishedAt   DateTime?
+  // Shu urinishdagi savollar va variantlar tartibi: [{q, o:[...]}]
+  layout       Json
   correctCount Int?
-  totalCount  Int?
-  scorePct    Float?
+  totalCount   Int?
+  scorePct     Float?
   accessCodeId String?
-  accessCode  AccessCode?   @relation(fields: [accessCodeId], references: [id])
+  accessCode   AccessCode?   @relation(fields: [accessCodeId], references: [id])
 
   answers     AttemptAnswer[]
   certificate Certificate?
@@ -163,140 +272,59 @@ model AttemptAnswer {
   @@unique([attemptId, questionId])
 }
 
-model AccessCode {
-  id        String    @id @default(cuid())
-  testId    String
-  test      Test      @relation(fields: [testId], references: [id], onDelete: Cascade)
-  code      String    @unique
-  maxUses   Int       @default(1)
-  usedCount Int       @default(0)
-  revokedAt DateTime?
-  expiresAt DateTime?
-  createdAt DateTime  @default(now())
-
-  attempts Attempt[]
-}
-
-// Video darslar: Fan -> Bo'lim -> Dars
-model LessonSection {
-  id        String  @id @default(cuid())
-  subjectId String
-  subject   Subject @relation(fields: [subjectId], references: [id])
-  title     String
-  order     Int     @default(0)
-
-  lessons Lesson[]
-}
-
-model Lesson {
-  id          String        @id @default(cuid())
-  sectionId   String
-  section     LessonSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  title       String
-  description String?
-  videoId     String // Bunny Stream video ID
-  durationSec Int?
-  order       Int           @default(0)
-  isFree      Boolean       @default(false) // obunasiz ko'rish mumkin (tanishtiruv)
-  isPublished Boolean       @default(false)
-  createdAt   DateTime      @default(now())
-}
-
-model Plan {
-  id        String   @id @default(cuid())
-  name      String
-  priceUzs  Int
-  days      Int
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-
-  subscriptions Subscription[]
-  payments      Payment[]
-}
-
-model Subscription {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  planId    String?
-  plan      Plan?    @relation(fields: [planId], references: [id])
-  startsAt  DateTime
-  endsAt    DateTime
-  // Qo'lda berilgan (admin) yoki to'lov orqali
-  source    String   @default("payment")
-  createdAt DateTime @default(now())
-
-  @@index([userId, endsAt])
-}
-
-enum PaymentProvider {
-  PAYME
-  CLICK
-  MANUAL
-}
-
-enum PaymentStatus {
-  PENDING
-  PAID
-  CANCELLED
-  FAILED
-}
-
-model Payment {
-  id          String          @id @default(cuid())
-  userId      String
-  user        User            @relation(fields: [userId], references: [id])
-  planId      String
-  plan        Plan            @relation(fields: [planId], references: [id])
-  provider    PaymentProvider
-  amountUzs   Int
-  status      PaymentStatus   @default(PENDING)
-  externalId  String? // Payme/Click tranzaksiya ID
-  // Qo'lda to'lov: chek rasmi (Telegram file_id) va admin qarori
-  receiptFileId String?
-  reviewedById  String?
-  reviewNote    String?
-  raw         Json?
-  paidAt      DateTime?
-  createdAt   DateTime        @default(now())
-
-  @@unique([provider, externalId])
-}
-
 model Certificate {
   id        String   @id @default(cuid())
-  number    String   @unique // tekshirish uchun ochiq ID, masalan ATT-2026-000123
+  number    String   @unique // ochiq tekshirish ID: ATT-2026-XXXXXXXX
   attemptId String   @unique
   attempt   Attempt  @relation(fields: [attemptId], references: [id])
   userId    String
   user      User     @relation(fields: [userId], references: [id])
-  pdfUrl    String?
   issuedAt  DateTime @default(now())
 }
 
 model CertificateTemplate {
-  id         String   @id @default(cuid())
-  name       String
-  backgroundUrl String?
-  // Matn joylashuvi: {name:{x,y,size}, score:{...}, date:{...}, qr:{x,y,size}}
-  layout     Json
-  minScorePct Float   @default(0) // shundan past ballga sertifikat berilmaydi
-  isActive   Boolean  @default(true)
-  updatedAt  DateTime @updatedAt
+  id               String   @id @default(cuid())
+  title            String   @default("SERTIFIKAT")
+  organization     String?
+  signerName       String?
+  backgroundFileId String?
+  minScorePct      Float    @default(60)
+  isActive         Boolean  @default(true)
+  updatedAt        DateTime @updatedAt
 }
 
 model Channel {
-  id        String   @id @default(cuid())
-  chatId    String   @unique // masalan -1001234567890 yoki @kanal
+  id        String  @id @default(cuid())
+  chatId    String  @unique // @kanal yoki -100...
   title     String
   inviteUrl String
-  isActive  Boolean  @default(true)
-  order     Int      @default(0)
+  isActive  Boolean @default(true)
+  order     Int     @default(0)
 }
 
 model Setting {
-  key   String @id // contacts, about, ...
+  key   String @id // contacts, about, site
   value Json
+}
+
+enum FileKind {
+  IMAGE // savol rasmlari, muqovalar: ochiq
+  MATERIAL // dars fayllari: kursga ruxsati borlarga
+  PRIVATE // faqat admin
+}
+
+// Fayllar bazada saqlanadi: Render diski har deployda tozalanadi
+model File {
+  id           String   @id @default(cuid())
+  kind         FileKind
+  name         String
+  mime         String
+  size         Int
+  data         Bytes
+  uploadedById String?
+  createdAt    DateTime @default(now())
+
+  lessonFiles LessonFile[]
 }
 
 model AuditLog {
@@ -308,4 +336,6 @@ model AuditLog {
   entityId  String?
   meta      Json?
   createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }

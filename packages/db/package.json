@@ -1,20 +1,21 @@
 {
-  "name": "@att/db",
-  "version": "0.1.0",
+  "name": "@edu/db",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
     "generate": "prisma generate",
-    "migrate": "prisma migrate dev",
-    "seed": "tsx src/seed.ts",
+    "migrate": "node --env-file-if-exists=../../.env node_modules/prisma/build/index.js migrate dev",
+    "deploy-db": "node --env-file-if-exists=../../.env node_modules/prisma/build/index.js migrate deploy",
+    "seed": "tsx --env-file-if-exists=../../.env src/seed.ts",
     "typecheck": "tsc --noEmit -p ."
   },
   "dependencies": {
     "@prisma/client": "^6.19.0"
   },
   "devDependencies": {
-    "@types/node": "^26.6.5",
+    "@types/node": "^24.0.0",
     "prisma": "^6.19.0",
     "tsx": "^4.20.0",
     "typescript": "^5.9.0"

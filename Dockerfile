@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:22-alpine
 RUN apk add --no-cache openssl
 RUN npm install -g pnpm@10.28.0
 WORKDIR /app
@@ -9,13 +9,9 @@ COPY apps/ ./apps/
 COPY packages/ ./packages/
 
 RUN pnpm install --frozen-lockfile --prod=false
-RUN pnpm --filter @att/db generate
+RUN pnpm build
 
-ARG VITE_BOT_USERNAME=ustozlar_jamoasibot
-ENV VITE_BOT_USERNAME=$VITE_BOT_USERNAME
-RUN pnpm --filter @att/web build
-
+ENV NODE_ENV=production
 ENV PORT=10000
 EXPOSE 10000
-
 CMD ["sh", "start.sh"]

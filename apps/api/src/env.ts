@@ -1,16 +1,19 @@
-function req(name: string, fallback?: string): string {
-  const v = process.env[name] ?? fallback;
-  if (v === undefined) throw new Error(`${name} muhit o'zgaruvchisi berilmagan`);
-  return v;
+function publicUrl() {
+  const raw = (process.env.PUBLIC_WEB_URL || process.env.RENDER_EXTERNAL_URL || "http://localhost:5173").trim().replace(/\/+$/, "");
+  return /^https?:\/\//.test(raw) ? raw : `https://${raw}`;
 }
 
+const isProd = process.env.NODE_ENV === "production";
+const jwtSecret = process.env.JWT_SECRET ?? (isProd ? "" : "dev-secret");
+if (!jwtSecret) throw new Error("JWT_SECRET berilmagan");
+
 export const env = {
-  port: Number(process.env.PORT ?? process.env.API_PORT ?? 4000),
-  jwtSecret: req("JWT_SECRET", "dev-secret"),
+  isProd,
+  port: Number(process.env.PORT ?? 4000),
+  jwtSecret,
   botToken: process.env.BOT_TOKEN ?? "",
-  botApiKey: req("BOT_API_KEY", "dev-bot-key"),
-  webOrigin: process.env.WEB_ORIGIN ?? "http://localhost:5173",
-  // Botda ro'yxatdan o'tganda avtomatik admin bo'ladigan Telegram ID lar (vergul bilan)
-  adminTelegramIds: (process.env.ADMIN_TELEGRAM_IDS ?? "").split(",").map((s) => s.trim()).filter(Boolean),
-  publicWebUrl: process.env.PUBLIC_WEB_URL ?? "http://localhost:5173",
+  botUsername: (process.env.BOT_USERNAME ?? "").replace(/^@/, ""),
+  // Yangi talaba haqida xabar boradigan chat (admin yoki guruh), ixtiyoriy
+  adminChatId: process.env.ADMIN_CHAT_ID ?? "",
+  publicWebUrl: publicUrl(),
 };

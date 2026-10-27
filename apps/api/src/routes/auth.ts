@@ -1,197 +1,112 @@
 import { Router } from "express";
+import rateLimit from "express-rate-limit";
 import { z } from "zod";
-import { prisma } from "@att/db";
+import { hashPassword, prisma, verifyPassword } from "@edu/db";
 import { env } from "../env.js";
-import { requireAuth, signToken } from "../auth/jwt.js";
-import { hashPassword, verifyPassword } from "../auth/password.js";
+import { publicUser, requireAuth, signToken, audit } from "../auth/session.js";
 import { verifyLoginWidget, verifyWebAppInitData, type TelegramUser } from "../auth/telegram.js";
-import { ApiError, h } from "../lib/errors.js";
-import { activeSubscriptionEnd } from "../services/access.js";
+import { ApiError, badRequest, h } from "../lib/errors.js";
+import { profileSchema } from "../services/profile.js";
+import { notifyNewStudent, sendMainMenu } from "../bot/notify.js";
 
 export const authRouter = Router();
 
-// Ro'yxatdan faqat bot orqali o'tiladi; sayt mavjud foydalanuvchini Telegram ID bo'yicha topadi.
-async function loginByTelegram(tg: TelegramUser | null) {
-  if (!tg) throw new ApiError(401, "BAD_SIGNATURE", "Telegram imzosi noto'g'ri yoki eskirgan");
-  const user = await prisma.user.findUnique({ where: { telegramId: BigInt(tg.id) } });
-  if (!user || !user.registered) throw new ApiError(403, "NOT_REGISTERED", "Avval botda ro'yxatdan o'ting");
-  await prisma.user.update({ where: { id: user.id }, data: { lastActiveAt: new Date() } });
-  return {
-    token: signToken(user.id),
-    user: {
-      id: user.id,
-      username: user.username,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      role: user.role,
-    },
-  };
+/** Telegram orqali kirish: birinchi marta bo'lsa talaba yaratiladi (anketa keyin to'ldiriladi). */
+async function loginWithTelegram(tg: TelegramUser | null) {
+  if (!tg) throw new ApiError(401, "BAD_SIGNATURE", "Telegram ma'lumoti tasdiqlanmadi. Qaytadan urinib ko'ring.");
+  const telegramId = BigInt(tg.id);
+  const existing = await prisma.user.findUnique({ where: { telegramId } });
+  if (existing?.status === "BLOCKED") throw new ApiError(403, "BLOCKED", "Hisobingiz bloklangan. Admin bilan bog'laning.");
+  const user = existing
+    ? await prisma.user.update({ where: { id: existing.id }, data: { lastActiveAt: new Date(), telegramUsername: tg.username ?? existing.telegramUsername } })
+    : await prisma.user.create({
+        data: { telegramId, telegramUsername: tg.username, firstName: tg.first_name ?? "", lastName: tg.last_name ?? "", lastActiveAt: new Date() },
+      });
+  return { token: signToken(user.id), user: publicUser(user) };
 }
 
-// 1. Login & Parol orqali kirish (Admin, Ustoz, Talaba)
-const loginSchema = z.object({
-  login: z.string().min(1, "Login kiritilishi shart"),
-  password: z.string().min(1, "Parol kiritilishi shart"),
-});
-
 authRouter.post(
-  "/login",
+  "/telegram/widget",
   h(async (req, res) => {
-    const { login, password } = loginSchema.parse(req.body);
-    const trimmed = login.trim();
-
-    // Login bo'yicha yoki telefon raqami bo'yicha qidirish
-    const user = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { username: trimmed },
-          { phone: trimmed },
-        ],
-      },
-    });
-
-    if (!user || !verifyPassword(password, user.passwordHash)) {
-      throw new ApiError(401, "INVALID_CREDENTIALS", "Login yoki parol noto'g'ri");
-    }
-
-    if (user.status === "BLOCKED") {
-      throw new ApiError(403, "BLOCKED", "Hisobingiz ma'muriyat tomonidan bloklangan");
-    }
-
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { lastActiveAt: new Date() },
-    });
-
-    res.json({
-      token: signToken(user.id),
-      user: {
-        id: user.id,
-        username: user.username,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-        phone: user.phone,
-      },
-    });
-  }),
-);
-
-// 2. Yangi foydalanuvchini saytdan ro'yxatdan o'tkazish
-const registerSchema = z.object({
-  username: z.string().min(3, "Login kamida 3 ta belgidan iborat bo'lsin").max(30).regex(/^[a-zA-Z0-9_.-]+$/, "Loginda faqat lotin harflari va raqamlar bo'lishi mumkin"),
-  password: z.string().min(6, "Parol kamida 6 ta belgidan iborat bo'lsin"),
-  firstName: z.string().min(2, "Ism kamida 2 ta harfdan iborat bo'lsin"),
-  lastName: z.string().min(2, "Familiya kamida 2 ta harfdan iborat bo'lsin"),
-  role: z.enum(["TEACHER", "STUDENT"]).default("TEACHER"),
-  phone: z.string().nullish(),
-  school: z.string().nullish(),
-  grade: z.string().nullish(),
-  region: z.string().nullish(),
-  district: z.string().nullish(),
-});
-
-authRouter.post(
-  "/register",
-  h(async (req, res) => {
-    const data = registerSchema.parse(req.body);
-    const existingUsername = await prisma.user.findUnique({ where: { username: data.username } });
-    if (existingUsername) {
-      throw new ApiError(400, "EXISTS", "Ushbu login band. Boshqa login tanlang.");
-    }
-
-    if (data.phone) {
-      const existingPhone = await prisma.user.findUnique({ where: { phone: data.phone } });
-      if (existingPhone) {
-        throw new ApiError(400, "EXISTS", "Ushbu telefon raqam allaqachon ro'yxatdan o'tgan.");
-      }
-    }
-
-    const user = await prisma.user.create({
-      data: {
-        username: data.username,
-        passwordHash: hashPassword(data.password),
-        firstName: data.firstName,
-        lastName: data.lastName,
-        role: data.role,
-        phone: data.phone ?? null,
-        school: data.school ?? null,
-        grade: data.grade ?? null,
-        region: data.region ?? null,
-        district: data.district ?? null,
-        registered: true,
-      },
-    });
-
-    res.json({
-      token: signToken(user.id),
-      user: {
-        id: user.id,
-        username: user.username,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-      },
-    });
+    const data = z.record(z.string(), z.union([z.string(), z.number()])).parse(req.body);
+    res.json(await loginWithTelegram(verifyLoginWidget(data, env.botToken)));
   }),
 );
 
 authRouter.post(
   "/telegram/webapp",
   h(async (req, res) => {
-    const { initData } = z.object({ initData: z.string() }).parse(req.body);
-    res.json(await loginByTelegram(verifyWebAppInitData(initData, env.botToken)));
+    const { initData } = z.object({ initData: z.string().min(1) }).parse(req.body);
+    res.json(await loginWithTelegram(verifyWebAppInitData(initData, env.botToken)));
+  }),
+);
+
+// ---------- Admin: login va parol ----------
+const MAX_FAILS = 5;
+const LOCK_MIN = 15;
+
+authRouter.post(
+  "/admin/login",
+  rateLimit({ windowMs: 15 * 60_000, limit: 30, standardHeaders: true, legacyHeaders: false, message: { error: { code: "TOO_MANY", message: "Juda ko'p urinish. Keyinroq qayta urinib ko'ring." } } }),
+  h(async (req, res) => {
+    const { login, password } = z.object({ login: z.string().trim().min(1, "Loginni kiriting"), password: z.string().min(1, "Parolni kiriting") }).parse(req.body);
+    const user = await prisma.user.findUnique({ where: { login: login.toLowerCase() } });
+    const invalid = new ApiError(401, "INVALID_CREDENTIALS", "Login yoki parol noto'g'ri");
+    if (!user || user.role !== "ADMIN") throw invalid;
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      const min = Math.ceil((+user.lockedUntil - Date.now()) / 60_000);
+      throw new ApiError(423, "LOCKED", `Ko'p marta xato kiritildi. ${min} daqiqadan keyin urinib ko'ring.`);
+    }
+    if (user.status === "BLOCKED") throw new ApiError(403, "BLOCKED", "Hisob bloklangan");
+    if (!verifyPassword(password, user.passwordHash)) {
+      const fails = user.failedLogins + 1;
+      await prisma.user.update({
+        where: { id: user.id },
+        data: fails >= MAX_FAILS ? { failedLogins: 0, lockedUntil: new Date(Date.now() + LOCK_MIN * 60_000) } : { failedLogins: fails },
+      });
+      if (fails >= MAX_FAILS) {
+        await audit(user.id, "admin.locked");
+        throw new ApiError(423, "LOCKED", `Ko'p marta xato kiritildi. ${LOCK_MIN} daqiqadan keyin urinib ko'ring.`);
+      }
+      throw invalid;
+    }
+    const updated = await prisma.user.update({ where: { id: user.id }, data: { failedLogins: 0, lockedUntil: null, lastActiveAt: new Date() } });
+    res.json({ token: signToken(user.id), user: publicUser(updated) });
+  }),
+);
+
+// ---------- Joriy foydalanuvchi ----------
+authRouter.get("/me", requireAuth, h(async (req, res) => res.json(publicUser(req.user!))));
+
+// Anketani to'ldirish (birinchi kirish) va keyin tahrirlash. Telegram ID o'zgarmaydi.
+authRouter.put(
+  "/me/profile",
+  requireAuth,
+  h(async (req, res) => {
+    const data = profileSchema.parse(req.body);
+    const taken = await prisma.user.findFirst({ where: { phone: data.phone, NOT: { id: req.user!.id } }, select: { id: true } });
+    if (taken) throw badRequest("PHONE_TAKEN", "Bu telefon raqami boshqa hisobga biriktirilgan");
+    const first = !req.user!.profileCompleted;
+    const user = await prisma.user.update({ where: { id: req.user!.id }, data: { ...data, profileCompleted: true } });
+    if (first && user.role === "STUDENT") {
+      void notifyNewStudent(user);
+      void sendMainMenu(user);
+    }
+    res.json(publicUser(user));
   }),
 );
 
 authRouter.post(
-  "/telegram/widget",
-  h(async (req, res) => {
-    const data = z.record(z.string(), z.union([z.string(), z.number()])).parse(req.body);
-    res.json(await loginByTelegram(verifyLoginWidget(data, env.botToken)));
-  }),
-);
-
-export const profileSchema = z.object({
-  firstName: z.string().min(1).max(60),
-  lastName: z.string().min(1).max(60),
-  region: z.string().max(80).nullish(),
-  district: z.string().max(80).nullish(),
-  address: z.string().max(200).nullish(),
-  school: z.string().max(120).nullish(),
-  grade: z.string().max(40).nullish(),
-});
-
-authRouter.get(
-  "/me",
+  "/me/password",
   requireAuth,
   h(async (req, res) => {
-    const u = req.user!;
-    res.json({
-      id: u.id,
-      username: u.username,
-      firstName: u.firstName,
-      lastName: u.lastName,
-      phone: u.phone,
-      region: u.region,
-      district: u.district,
-      address: u.address,
-      school: u.school,
-      grade: u.grade,
-      role: u.role,
-      status: u.status,
-      subscriptionEndsAt: await activeSubscriptionEnd(u.id),
-    });
-  }),
-);
-
-// Shaxsiy kabinetdan ma'lumotlarni tahrirlash (telefon va Telegram ID o'zgarmaydi)
-authRouter.patch(
-  "/me",
-  requireAuth,
-  h(async (req, res) => {
-    const data = profileSchema.partial().parse(req.body);
-    await prisma.user.update({ where: { id: req.user!.id }, data });
+    const { current, next } = z
+      .object({ current: z.string().min(1, "Joriy parolni kiriting"), next: z.string().min(8, "Yangi parol kamida 8 belgi").max(100) })
+      .parse(req.body);
+    if (req.user!.role !== "ADMIN") throw badRequest("NOT_ADMIN", "Parol faqat admin uchun");
+    if (!verifyPassword(current, req.user!.passwordHash)) throw badRequest("BAD_PASSWORD", "Joriy parol noto'g'ri");
+    await prisma.user.update({ where: { id: req.user!.id }, data: { passwordHash: hashPassword(next) } });
+    await audit(req.user!.id, "admin.password");
     res.json({ ok: true });
   }),
 );

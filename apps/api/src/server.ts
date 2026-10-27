@@ -1,46 +1,40 @@
-// Ishlab chiqarish (Render) uchun bitta jarayon: API + sayt (apps/web/dist) + Telegram bot webhook.
+// Ishlab chiqarish: bitta jarayon API + sayt (apps/web/dist) + Telegram bot (webhook).
 import crypto from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import express from "express";
 import { webhookCallback } from "grammy";
-import { createBot } from "@att/bot";
 import { createApp } from "./app.js";
+import { createBot } from "./bot/index.js";
 import { env } from "./env.js";
 
 const webDist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../web/dist");
-let publicUrl = (process.env.PUBLIC_WEB_URL || process.env.RENDER_EXTERNAL_URL || "https://ustozlar-jamoasi.onrender.com").trim();
-if (!publicUrl.startsWith("http://") && !publicUrl.startsWith("https://")) {
-  publicUrl = `https://${publicUrl}`;
-}
-
 const bot = env.botToken ? createBot(env.botToken) : null;
-// Webhook manzili tokenga bog'liq maxfiy yo'l: begona so'rovlar botga yetib bormaydi
-const hookPath = `/api/telegram/${crypto.createHash("sha256").update(env.botToken).digest("hex").slice(0, 32)}`;
+// Webhook manzili tokendan olingan maxfiy yo'l: begona so'rov botga yetib bormaydi
+const hookPath = `/telegram/${crypto.createHash("sha256").update(env.botToken).digest("hex").slice(0, 32)}`;
 
 const app = createApp({
-  beforeRoutes: (a) => {
-    if (bot) a.post(hookPath, webhookCallback(bot, "express"));
+  beforeApi: (a) => {
+    if (bot) a.post(hookPath, webhookCallback(bot, "express", { onTimeout: "return", timeoutMilliseconds: 25_000 }));
   },
-  beforeErrors: (a) => {
+  afterApi: (a) => {
+    a.use("/assets", express.static(path.join(webDist, "assets"), { immutable: true, maxAge: "1y" }));
     a.use(express.static(webDist, { index: false, maxAge: "1h" }));
-    // React marshrutlari (/tests, /verify/... va h.k.) uchun index.html
     a.get(/^\/(?!api\/).*/, (_req, res) => res.sendFile(path.join(webDist, "index.html")));
   },
 });
 
 app.listen(env.port, "0.0.0.0", async () => {
-  console.log(`Server ${env.port}-portda ishga tushdi`);
+  console.log(`Server ${env.port}-portda, manzil: ${env.publicWebUrl}`);
   if (!bot) return console.warn("BOT_TOKEN berilmagan: bot o'chiq");
-  if (!publicUrl?.startsWith("https://")) return console.warn("PUBLIC_WEB_URL https emas: webhook o'rnatilmadi");
-
+  if (!env.publicWebUrl.startsWith("https://")) return console.warn("PUBLIC_WEB_URL https emas: webhook o'rnatilmadi");
   try {
     await bot.init();
-    const cleanPublicUrl = publicUrl.replace(/\/+$/, "");
-    const webhookUrl = `${cleanPublicUrl}${hookPath}`;
-    await bot.api.setWebhook(webhookUrl, { drop_pending_updates: false });
-    console.log(`Bot @${bot.botInfo.username} webhook rejimida: ${webhookUrl}`);
-  } catch (err) {
-    console.error("Bot webhook o'rnatishda xatolik yuz berdi (server ishlashda davom etadi):", err);
+    await bot.api.setWebhook(`${env.publicWebUrl}${hookPath}`);
+    await bot.api.setMyCommands([{ command: "start", description: "Bosh menyu" }]);
+    await bot.api.setChatMenuButton({ menu_button: { type: "web_app", text: "Platforma", web_app: { url: `${env.publicWebUrl}/` } } });
+    console.log(`Bot @${bot.botInfo.username} webhook rejimida ishlayapti`);
+  } catch (e) {
+    console.error("Bot webhook o'rnatilmadi (sayt ishlashda davom etadi):", e);
   }
 });

@@ -1,136 +1,68 @@
-import { StrictMode, useEffect, useState } from "react";
+import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import { ensureLogin, User } from "./api";
-import { Navbar } from "./components/Navbar";
-import { AdminPage } from "./pages/Admin";
-import { AttemptPage, Centered } from "./pages/Attempt";
-import { CabinetPage } from "./pages/Cabinet";
-import { LoginPage } from "./pages/Login";
-import { TestsPage } from "./pages/Tests";
-import { VerifyPage } from "./pages/Verify";
 import "./index.css";
+import { AdminLayout, BlockedNotice, PublicLayout, RequireAdmin, RequireStudent, StudentLayout } from "./components/layouts";
+import { ToastProvider } from "./components/ui";
+import { AuthProvider } from "./lib/auth";
+import { ConfigProvider } from "./lib/config";
+import Home from "./pages/Home";
+import Login from "./pages/Login";
+import Onboarding from "./pages/student/Onboarding";
+import Cabinet from "./pages/student/Cabinet";
+import AdminLogin from "./pages/admin/Login";
+import Dashboard from "./pages/admin/Dashboard";
+import Students from "./pages/admin/Students";
+import Admins from "./pages/admin/Admins";
+import SettingsPage from "./pages/admin/Settings";
+import Password from "./pages/admin/Password";
 
-function ProtectedLayout({
-  children,
-  requireAdmin,
-}: {
-  children: React.ReactNode;
-  requireAdmin?: boolean;
-}) {
-  const [user, setUser] = useState<User | null>(null);
-  const [state, setState] = useState<"wait" | "ok" | "no">("wait");
-
-  useEffect(() => {
-    ensureLogin()
-      .then((u) => {
-        if (u) {
-          setUser(u);
-          if (requireAdmin && u.role !== "ADMIN") {
-            setState("no");
-          } else {
-            setState("ok");
-          }
-        } else {
-          setState("no");
-        }
-      })
-      .catch((e) => {
-        console.error("Login verification failed:", e);
-        setState("no");
-      });
-  }, [requireAdmin]);
-
-  if (state === "wait") {
-    return <Centered>Kirilmoqda…</Centered>;
-  }
-
-  if (state === "no") {
-    return <Navigate to="/login" replace />;
-  }
-
+function NotFound() {
   return (
-    <div className="min-h-screen bg-[#05070c] text-[#f8fafc]">
-      <Navbar user={user} />
-      <main className="pb-12">{children}</main>
+    <div className="mx-auto max-w-md px-4 py-24 text-center">
+      <p className="text-5xl font-bold text-brand-600">404</p>
+      <p className="mt-3 text-muted">Sahifa topilmadi</p>
+      <a href="/" className="mt-6 inline-block font-medium text-brand-700 hover:underline">
+        Bosh sahifaga qaytish
+      </a>
     </div>
   );
 }
 
-// Hali to'liq yozilmagan bo'limlar (darslar, obuna)
-const Soon = ({ title }: { title: string }) => (
-  <div className="mx-auto max-w-xl p-8 text-center text-slate-400">
-    <div className="mb-3 text-4xl">🚀</div>
-    <h2 className="text-xl font-bold text-white mb-2">{title}</h2>
-    <p className="text-sm">Ushbu bo'lim hozirda tayyorlanmoqda va tez orada taqdim etiladi.</p>
-  </div>
-);
-
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <BrowserRouter>
-      <Routes>
-        {/* Ommaviy sahifalar */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/verify/:number" element={<VerifyPage />} />
-
-        {/* Himoyalangan asosiy sahifalar */}
-        <Route
-          path="/tests"
-          element={
-            <ProtectedLayout>
-              <TestsPage />
-            </ProtectedLayout>
-          }
-        />
-        <Route
-          path="/cabinet"
-          element={
-            <ProtectedLayout>
-              <CabinetPage />
-            </ProtectedLayout>
-          }
-        />
-        <Route
-          path="/lessons"
-          element={
-            <ProtectedLayout>
-              <Soon title="Video darslar va materiallar" />
-            </ProtectedLayout>
-          }
-        />
-        <Route
-          path="/subscribe"
-          element={
-            <ProtectedLayout>
-              <Soon title="Obuna tariflari" />
-            </ProtectedLayout>
-          }
-        />
-
-        {/* Test jarayoni */}
-        <Route
-          path="/attempt/:id"
-          element={
-            <ProtectedLayout>
-              <AttemptPage />
-            </ProtectedLayout>
-          }
-        />
-
-        {/* Admin panel (faqat ADMIN uchun) */}
-        <Route
-          path="/admin"
-          element={
-            <ProtectedLayout requireAdmin>
-              <AdminPage />
-            </ProtectedLayout>
-          }
-        />
-
-        {/* Qolgan barcha yo'nalishlar testlarga yo'naltiriladi */}
-        <Route path="*" element={<Navigate to="/tests" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <ConfigProvider>
+      <AuthProvider>
+        <ToastProvider>
+          <BrowserRouter>
+            <BlockedNotice />
+            <Routes>
+              <Route element={<PublicLayout />}>
+                <Route index element={<Home />} />
+                <Route path="login" element={<Login />} />
+              </Route>
+              <Route path="onboarding" element={<Onboarding />} />
+              <Route element={<RequireStudent />}>
+                <Route element={<StudentLayout />}>
+                  <Route path="cabinet" element={<Cabinet />} />
+                </Route>
+              </Route>
+              <Route path="admin/login" element={<AdminLogin />} />
+              <Route path="admin" element={<RequireAdmin />}>
+                <Route element={<AdminLayout />}>
+                  <Route index element={<Dashboard />} />
+                  <Route path="students" element={<Students />} />
+                  <Route path="admins" element={<Admins />} />
+                  <Route path="settings" element={<SettingsPage />} />
+                  <Route path="password" element={<Password />} />
+                  <Route path="*" element={<Navigate to="/admin" replace />} />
+                </Route>
+              </Route>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </ToastProvider>
+      </AuthProvider>
+    </ConfigProvider>
   </StrictMode>,
 );
