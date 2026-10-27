@@ -1,0 +1,15 @@
+{
+  "name": "attestatsiya",
+  "private": true,
+  "packageManager": "pnpm@10.28.0",
+  "scripts": {
+    "dev:api": "pnpm --filter @att/api dev",
+    "dev:bot": "pnpm --filter @att/bot dev",
+    "dev:web": "pnpm --filter @att/web dev",
+    "db:migrate": "pnpm --filter @att/db migrate",
+    "db:generate": "pnpm --filter @att/db generate",
+    "db:seed": "pnpm --filter @att/db seed",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck"
+  }
+}

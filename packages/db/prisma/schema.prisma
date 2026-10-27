@@ -1,0 +1,309 @@
+// Attestatsiya platformasi — ma'lumotlar bazasi sxemasi.
+// Sayt, bot va admin panel shu bitta bazadan foydalanadi.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+}
+
+model User {
+  id          String     @id @default(cuid())
+  telegramId  BigInt?    @unique
+  firstName   String
+  lastName    String
+  phone       String?    @unique
+  region      String? // viloyat
+  district    String? // tuman
+  address     String?
+  school      String?
+  grade       String? // sinf (yoki ustoz uchun toifa)
+  role        Role       @default(TEACHER)
+  status      UserStatus @default(ACTIVE)
+  // Ro'yxat to'liq yakunlanganmi (bot bosqichma-bosqich to'ldiradi)
+  registered  Boolean    @default(false)
+  lastActiveAt DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  attempts      Attempt[]
+  subscriptions Subscription[]
+  payments      Payment[]
+  certificates  Certificate[]
+  auditLogs     AuditLog[]
+}
+
+model Subject {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  tests    Test[]
+  sections LessonSection[]
+}
+
+model Test {
+  id              String    @id @default(cuid())
+  subjectId       String
+  subject         Subject   @relation(fields: [subjectId], references: [id])
+  title           String
+  description     String?
+  durationMin     Int       @default(60)
+  questionCount   Int       @default(20) // har urinishda nechta savol beriladi
+  shuffleQuestions Boolean  @default(true)
+  shuffleOptions  Boolean   @default(true)
+  maxAttempts     Int? // null = cheksiz
+  requiresCode    Boolean   @default(false) // yopiq test: kirish kodi yoki parol
+  password        String? // umumiy parol (ixtiyoriy)
+  requiresSubscription Boolean @default(true)
+  opensAt         DateTime?
+  closesAt        DateTime?
+  isActive        Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  questions   Question[]
+  attempts    Attempt[]
+  accessCodes AccessCode[]
+}
+
+model Question {
+  id        String   @id @default(cuid())
+  testId    String
+  test      Test     @relation(fields: [testId], references: [id], onDelete: Cascade)
+  // Markdown + LaTeX ($...$) formulalar
+  text      String
+  imageUrl  String?
+  order     Int      @default(0)
+  // Statistika (har kecha qayta hisoblanadi)
+  pCorrect  Float? // to'g'ri javoblar ulushi 0..1
+  raschB    Float? // RASH modeli bo'yicha qiyinchilik (logit)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  options Option[]
+  answers AttemptAnswer[]
+}
+
+model Option {
+  id         String   @id @default(cuid())
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text       String
+  imageUrl   String?
+  isCorrect  Boolean  @default(false)
+  order      Int      @default(0)
+
+  answers AttemptAnswer[]
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  FINISHED
+  EXPIRED
+}
+
+model Attempt {
+  id          String        @id @default(cuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id])
+  testId      String
+  test        Test          @relation(fields: [testId], references: [id])
+  status      AttemptStatus @default(IN_PROGRESS)
+  startedAt   DateTime      @default(now())
+  deadlineAt  DateTime // server vaqti bo'yicha tugash
+  finishedAt  DateTime?
+  // Shu urinishda berilgan savollar va variantlar tartibi: [{q, o:[...]}]
+  layout      Json
+  correctCount Int?
+  totalCount  Int?
+  scorePct    Float?
+  accessCodeId String?
+  accessCode  AccessCode?   @relation(fields: [accessCodeId], references: [id])
+
+  answers     AttemptAnswer[]
+  certificate Certificate?
+
+  @@index([testId, status, scorePct])
+  @@index([userId])
+}
+
+model AttemptAnswer {
+  id         String   @id @default(cuid())
+  attemptId  String
+  attempt    Attempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id])
+  optionId   String?
+  option     Option?  @relation(fields: [optionId], references: [id])
+  flagged    Boolean  @default(false)
+  isCorrect  Boolean?
+  updatedAt  DateTime @updatedAt
+
+  @@unique([attemptId, questionId])
+}
+
+model AccessCode {
+  id        String    @id @default(cuid())
+  testId    String
+  test      Test      @relation(fields: [testId], references: [id], onDelete: Cascade)
+  code      String    @unique
+  maxUses   Int       @default(1)
+  usedCount Int       @default(0)
+  revokedAt DateTime?
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+
+  attempts Attempt[]
+}
+
+// Video darslar: Fan -> Bo'lim -> Dars
+model LessonSection {
+  id        String  @id @default(cuid())
+  subjectId String
+  subject   Subject @relation(fields: [subjectId], references: [id])
+  title     String
+  order     Int     @default(0)
+
+  lessons Lesson[]
+}
+
+model Lesson {
+  id          String        @id @default(cuid())
+  sectionId   String
+  section     LessonSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  videoId     String // Bunny Stream video ID
+  durationSec Int?
+  order       Int           @default(0)
+  isFree      Boolean       @default(false) // obunasiz ko'rish mumkin (tanishtiruv)
+  isPublished Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+}
+
+model Plan {
+  id        String   @id @default(cuid())
+  name      String
+  priceUzs  Int
+  days      Int
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  subscriptions Subscription[]
+  payments      Payment[]
+}
+
+model Subscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  planId    String?
+  plan      Plan?    @relation(fields: [planId], references: [id])
+  startsAt  DateTime
+  endsAt    DateTime
+  // Qo'lda berilgan (admin) yoki to'lov orqali
+  source    String   @default("payment")
+  createdAt DateTime @default(now())
+
+  @@index([userId, endsAt])
+}
+
+enum PaymentProvider {
+  PAYME
+  CLICK
+  MANUAL
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  CANCELLED
+  FAILED
+}
+
+model Payment {
+  id          String          @id @default(cuid())
+  userId      String
+  user        User            @relation(fields: [userId], references: [id])
+  planId      String
+  plan        Plan            @relation(fields: [planId], references: [id])
+  provider    PaymentProvider
+  amountUzs   Int
+  status      PaymentStatus   @default(PENDING)
+  externalId  String? // Payme/Click tranzaksiya ID
+  // Qo'lda to'lov: chek rasmi (Telegram file_id) va admin qarori
+  receiptFileId String?
+  reviewedById  String?
+  reviewNote    String?
+  raw         Json?
+  paidAt      DateTime?
+  createdAt   DateTime        @default(now())
+
+  @@unique([provider, externalId])
+}
+
+model Certificate {
+  id        String   @id @default(cuid())
+  number    String   @unique // tekshirish uchun ochiq ID, masalan ATT-2026-000123
+  attemptId String   @unique
+  attempt   Attempt  @relation(fields: [attemptId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  pdfUrl    String?
+  issuedAt  DateTime @default(now())
+}
+
+model CertificateTemplate {
+  id         String   @id @default(cuid())
+  name       String
+  backgroundUrl String?
+  // Matn joylashuvi: {name:{x,y,size}, score:{...}, date:{...}, qr:{x,y,size}}
+  layout     Json
+  minScorePct Float   @default(0) // shundan past ballga sertifikat berilmaydi
+  isActive   Boolean  @default(true)
+  updatedAt  DateTime @updatedAt
+}
+
+model Channel {
+  id        String   @id @default(cuid())
+  chatId    String   @unique // masalan -1001234567890 yoki @kanal
+  title     String
+  inviteUrl String
+  isActive  Boolean  @default(true)
+  order     Int      @default(0)
+}
+
+model Setting {
+  key   String @id // contacts, about, ...
+  value Json
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  actor     User?    @relation(fields: [actorId], references: [id])
+  action    String
+  entity    String?
+  entityId  String?
+  meta      Json?
+  createdAt DateTime @default(now())
+}
