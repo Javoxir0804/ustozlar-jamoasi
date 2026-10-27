@@ -76,3 +76,27 @@ export const fmtDate = (s: string | null | undefined, withTime = false) =>
   s
     ? new Date(s).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", ...(withTime ? { hour: "2-digit", minute: "2-digit" } : {}) })
     : "—";
+
+export type Uploaded = { id: string; name: string; mime: string; size: number; kind: string; url: string };
+
+/** Faylni admin sifatida yuklaydi. Tana xom holda, asl turi ?mime= da. */
+export async function uploadFile(file: File, kind: "IMAGE" | "MATERIAL" | "PRIVATE"): Promise<Uploaded> {
+  const q = new URLSearchParams({ kind, name: file.name, mime: file.type || "application/octet-stream" });
+  let res: Response;
+  try {
+    res = await fetch(`/api/admin/files?${q}`, { method: "POST", headers: { "content-type": "application/octet-stream", authorization: `Bearer ${token.get() ?? ""}` }, body: file });
+  } catch {
+    throw new ApiError(0, "NETWORK", "Internet aloqasi yo'q. Qayta urinib ko'ring.");
+  }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new ApiError(res.status, data.error?.code ?? "HTTP", data.error?.message ?? (res.status === 413 ? "Fayl juda katta" : "Yuklab bo'lmadi"));
+  return data as Uploaded;
+}
+
+/** Himoyalangan fayl havolasi (<a>, <video> sarlavha yubora olmaydi, token so'rovda). */
+export const fileHref = (url: string) => {
+  const t = token.get();
+  return t && url.startsWith("/api/files/") ? `${url}?t=${encodeURIComponent(t)}` : url;
+};
+
+export const fmtSize = (n: number) => (n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`);

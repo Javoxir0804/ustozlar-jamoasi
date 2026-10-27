@@ -5,6 +5,8 @@ import rateLimit from "express-rate-limit";
 import { errorHandler } from "./lib/errors.js";
 import { adminRouter } from "./routes/admin/index.js";
 import { authRouter } from "./routes/auth.js";
+import { coursesRouter } from "./routes/courses.js";
+import { filesRouter } from "./routes/files.js";
 import { publicRouter } from "./routes/public.js";
 
 // BigInt (Telegram ID) JSON da satr bo'lib chiqadi
@@ -43,7 +45,10 @@ export function createApp(opts: { beforeApi?: (app: express.Express) => void; af
   app.use("/api", rateLimit({ windowMs: 60_000, limit: 600, standardHeaders: true, legacyHeaders: false }));
   app.use("/api/auth", authRouter);
   app.use("/api/public", publicRouter);
+  // Fayl yuklash JSON chegarasidan katta: admin routerdan oldin
+  app.use("/api", filesRouter);
   app.use("/api/admin", adminRouter);
+  app.use("/api", coursesRouter);
   app.use("/api", (_req, res) => res.status(404).json({ error: { code: "NOT_FOUND", message: "Bunday manzil yo'q" } }));
 
   opts.afterApi?.(app);

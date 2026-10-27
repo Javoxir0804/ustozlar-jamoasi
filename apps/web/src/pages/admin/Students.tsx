@@ -5,6 +5,79 @@ import { Alert, Badge, Button, Card, EmptyState, Input, Modal, Select, Spinner, 
 import { api, ApiError, fmtDate, fullName, type User } from "../../lib/api";
 import { useConfig } from "../../lib/config";
 
+type AccessRow = { id: string; expiresAt: string | null; course: { id: string; title: string } };
+
+/** Talaba kartasida: ochilgan kurslar va yangi kurs ochish. */
+function StudentCourses({ userId }: { userId: string }) {
+  const toast = useToast();
+  const [rows, setRows] = useState<AccessRow[] | null>(null);
+  const [courses, setCourses] = useState<{ id: string; title: string; isPaid: boolean }[]>([]);
+  const [courseId, setCourseId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const load = useCallback(() => api<AccessRow[]>(`/admin/students/${userId}/access`).then(setRows, () => setRows([])), [userId]);
+  useEffect(() => {
+    load();
+    api<{ id: string; title: string; isPaid: boolean }[]>("/admin/courses").then((c) => setCourses(c.filter((x) => x.isPaid)), () => {});
+  }, [load]);
+  async function grant() {
+    setBusy(true);
+    try {
+      await api(`/admin/courses/${courseId}/access`, { body: { userIds: [userId] } });
+      toast("Kurs ochildi");
+      setCourseId("");
+      load();
+    } catch (e) {
+      toast(e instanceof ApiError ? e.message : "Xatolik", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+  const open = new Set(rows?.map((r) => r.course.id));
+  return (
+    <div className="mt-5 border-t border-line pt-4">
+      <h3 className="mb-2 text-sm font-semibold">Ochilgan pullik kurslar</h3>
+      {rows && rows.length === 0 && <p className="text-sm text-muted">Yo'q</p>}
+      <ul className="space-y-1.5">
+        {rows?.map((r) => (
+          <li key={r.id} className="flex items-center justify-between gap-2 text-sm">
+            <span className="truncate">{r.course.title}</span>
+            <span className="flex shrink-0 items-center gap-2 text-xs text-muted">
+              {r.expiresAt ? `${fmtDate(r.expiresAt)} gacha` : "muddatsiz"}
+              <button
+                className="text-red-600 hover:underline"
+                onClick={async () => {
+                  if (!confirm("Ruxsat bekor qilinsinmi?")) return;
+                  await api(`/admin/access/${r.id}`, { method: "DELETE" });
+                  load();
+                }}
+              >
+                bekor qilish
+              </button>
+            </span>
+          </li>
+        ))}
+      </ul>
+      {courses.some((c) => !open.has(c.id)) && (
+        <div className="mt-3 flex gap-2">
+          <Select value={courseId} onChange={(e) => setCourseId(e.target.value)}>
+            <option value="">Kursni tanlang</option>
+            {courses
+              .filter((c) => !open.has(c.id))
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.title}
+                </option>
+              ))}
+          </Select>
+          <Button disabled={!courseId} loading={busy} onClick={grant}>
+            Ochish
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 type Page = { items: User[]; total: number; page: number; pageSize: number };
 
 function StatusBadge({ u }: { u: User }) {
@@ -189,6 +262,7 @@ export default function Students() {
             ))}
           </dl>
         )}
+        {selected?.profileCompleted && <StudentCourses userId={selected.id} />}
       </Modal>
     </>
   );

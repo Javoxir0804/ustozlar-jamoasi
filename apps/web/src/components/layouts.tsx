@@ -5,7 +5,7 @@ import { fullName } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { useConfig } from "../lib/config";
 import { insideTelegram } from "../lib/telegram";
-import { IconHome, IconKey, IconLogout, IconMenu, IconSettings, IconShield, IconUser, IconUsers } from "./icons";
+import { IconBook, IconHome, IconKey, IconLayers, IconLogout, IconMenu, IconSettings, IconShield, IconUser, IconUsers } from "./icons";
 import { Logo } from "./Logo";
 import { Alert, Button, cx, PageLoader } from "./ui";
 
@@ -30,7 +30,7 @@ export function RequireAdmin() {
 
 // ---------- Ochiq sahifalar ----------
 
-export function PublicLayout() {
+export function PublicLayout({ padded }: { padded?: boolean }) {
   const { user } = useAuth();
   const config = useConfig();
   const c = config?.contacts;
@@ -40,6 +40,9 @@ export function PublicLayout() {
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
           <Logo />
           <nav className="flex items-center gap-1 sm:gap-2">
+            <Link to="/courses" className="rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100">
+              Video darslar
+            </Link>
             <a href="/#contacts" className="hidden rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 sm:block">
               Bog'lanish
             </a>
@@ -55,7 +58,7 @@ export function PublicLayout() {
           </nav>
         </div>
       </header>
-      <main className="flex-1">
+      <main className={cx("flex-1", padded && "mx-auto w-full max-w-5xl px-4 py-6")}>
         <Outlet />
       </main>
       <footer id="contacts" className="border-t border-line bg-white">
@@ -110,8 +113,19 @@ export function ContactList({ contacts }: { contacts?: { phone?: string; telegra
 
 // ---------- Talaba bo'limi ----------
 
-// Keyingi bosqichlarda bu ro'yxatga Kurslar, Testlar, Natijalar qo'shiladi
-const STUDENT_NAV = [{ to: "/cabinet", label: "Kabinet", icon: IconUser }];
+// Keyingi bosqichlarda bu ro'yxatga Testlar va Natijalar qo'shiladi
+const STUDENT_NAV = [
+  { to: "/courses", label: "Video darslar", icon: IconBook },
+  { to: "/cabinet", label: "Kabinet", icon: IconUser },
+];
+
+/** Kurslar katalogi: ro'yxatdan o'tgan talabaga talaba menyusi bilan, mehmonga ochiq sahifa sifatida. */
+export function CoursesLayout() {
+  const { user, loading } = useAuth();
+  if (loading) return <PageLoader />;
+  if (user?.role === "STUDENT" && user.profileCompleted) return <StudentLayout />;
+  return <PublicLayout padded />;
+}
 
 export function StudentLayout() {
   const { user, logout } = useAuth();
@@ -161,6 +175,8 @@ export function StudentLayout() {
 const ADMIN_NAV = [
   { to: "/admin", label: "Bosh panel", icon: IconHome, end: true },
   { to: "/admin/students", label: "Talabalar", icon: IconUsers },
+  { to: "/admin/subjects", label: "Fanlar", icon: IconLayers },
+  { to: "/admin/courses", label: "Kurslar", icon: IconBook },
   { to: "/admin/admins", label: "Adminlar", icon: IconShield },
   { to: "/admin/settings", label: "Sozlamalar", icon: IconSettings },
   { to: "/admin/password", label: "Parolni o'zgartirish", icon: IconKey },

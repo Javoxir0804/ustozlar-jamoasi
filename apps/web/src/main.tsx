@@ -1,21 +1,27 @@
-import { StrictMode } from "react";
+import { lazy, StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import "./index.css";
-import { AdminLayout, BlockedNotice, PublicLayout, RequireAdmin, RequireStudent, StudentLayout } from "./components/layouts";
-import { ToastProvider } from "./components/ui";
+import { AdminLayout, BlockedNotice, CoursesLayout, PublicLayout, RequireAdmin, RequireStudent, StudentLayout } from "./components/layouts";
+import { PageLoader, ToastProvider } from "./components/ui";
 import { AuthProvider } from "./lib/auth";
 import { ConfigProvider } from "./lib/config";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Onboarding from "./pages/student/Onboarding";
 import Cabinet from "./pages/student/Cabinet";
-import AdminLogin from "./pages/admin/Login";
-import Dashboard from "./pages/admin/Dashboard";
-import Students from "./pages/admin/Students";
-import Admins from "./pages/admin/Admins";
-import SettingsPage from "./pages/admin/Settings";
-import Password from "./pages/admin/Password";
+const AdminLogin = lazy(() => import("./pages/admin/Login"));
+const Dashboard = lazy(() => import("./pages/admin/Dashboard"));
+const Students = lazy(() => import("./pages/admin/Students"));
+const Admins = lazy(() => import("./pages/admin/Admins"));
+const SettingsPage = lazy(() => import("./pages/admin/Settings"));
+const Password = lazy(() => import("./pages/admin/Password"));
+const Subjects = lazy(() => import("./pages/admin/Subjects"));
+const AdminCourses = lazy(() => import("./pages/admin/Courses"));
+const CourseEdit = lazy(() => import("./pages/admin/CourseEdit"));
+const Catalog = lazy(() => import("./pages/courses/Catalog"));
+const CoursePage = lazy(() => import("./pages/courses/CoursePage"));
+const LessonPage = lazy(() => import("./pages/courses/LessonPage"));
 
 function NotFound() {
   return (
@@ -36,15 +42,21 @@ createRoot(document.getElementById("root")!).render(
         <ToastProvider>
           <BrowserRouter>
             <BlockedNotice />
+            <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route element={<PublicLayout />}>
                 <Route index element={<Home />} />
                 <Route path="login" element={<Login />} />
               </Route>
+              <Route element={<CoursesLayout />}>
+                <Route path="courses" element={<Catalog />} />
+                <Route path="courses/:id" element={<CoursePage />} />
+              </Route>
               <Route path="onboarding" element={<Onboarding />} />
               <Route element={<RequireStudent />}>
                 <Route element={<StudentLayout />}>
                   <Route path="cabinet" element={<Cabinet />} />
+                  <Route path="lessons/:id" element={<LessonPage />} />
                 </Route>
               </Route>
               <Route path="admin/login" element={<AdminLogin />} />
@@ -52,6 +64,9 @@ createRoot(document.getElementById("root")!).render(
                 <Route element={<AdminLayout />}>
                   <Route index element={<Dashboard />} />
                   <Route path="students" element={<Students />} />
+                  <Route path="subjects" element={<Subjects />} />
+                  <Route path="courses" element={<AdminCourses />} />
+                  <Route path="courses/:id" element={<CourseEdit />} />
                   <Route path="admins" element={<Admins />} />
                   <Route path="settings" element={<SettingsPage />} />
                   <Route path="password" element={<Password />} />
@@ -60,6 +75,7 @@ createRoot(document.getElementById("root")!).render(
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </Suspense>
           </BrowserRouter>
         </ToastProvider>
       </AuthProvider>

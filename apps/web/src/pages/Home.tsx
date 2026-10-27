@@ -1,4 +1,8 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { CourseGrid } from "../components/CourseGrid";
+import type { CourseCard } from "./courses/types";
+import { api } from "../lib/api";
 import { Button, Card } from "../components/ui";
 import { IconAward, IconChart, IconCheck, IconPlay } from "../components/icons";
 import { useAuth } from "../lib/auth";
@@ -14,6 +18,10 @@ const FEATURES = [
 export default function Home() {
   const { user } = useAuth();
   const config = useConfig();
+  const [courses, setCourses] = useState<CourseCard[]>([]);
+  useEffect(() => {
+    api<CourseCard[]>("/courses").then(setCourses, () => {});
+  }, [user?.id]);
   const to = user ? (user.role === "ADMIN" ? "/admin" : "/cabinet") : "/login";
   return (
     <>
@@ -45,6 +53,17 @@ export default function Home() {
             </Card>
           ))}
         </div>
+        {courses.length > 0 && (
+          <div className="mt-14">
+            <div className="mb-4 flex items-end justify-between">
+              <h2 className="text-2xl font-semibold tracking-tight">Video darslar</h2>
+              <Link to="/courses" className="text-sm font-medium text-brand-700 hover:underline">
+                Barchasi
+              </Link>
+            </div>
+            <CourseGrid courses={courses.slice(0, 6)} />
+          </div>
+        )}
         {config?.about?.text && (
           <Card className="mt-10 p-6">
             <h2 className="text-lg font-semibold">Biz haqimizda</h2>

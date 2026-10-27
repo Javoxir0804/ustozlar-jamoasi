@@ -103,7 +103,7 @@ export function EmptyState({ title, text, action }: { title: string; text?: stri
   );
 }
 
-export function Modal({ open, onClose, title, children, footer }: { open: boolean; onClose: () => void; title: string; children: ReactNode; footer?: ReactNode }) {
+export function Modal({ open, onClose, title, children, footer, wide }: { open: boolean; onClose: () => void; title: string; children: ReactNode; footer?: ReactNode; wide?: boolean }) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -113,7 +113,7 @@ export function Modal({ open, onClose, title, children, footer }: { open: boolea
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-0 sm:items-center sm:p-4" onMouseDown={onClose}>
-      <div role="dialog" aria-modal aria-label={title} className="w-full max-w-lg rounded-t-2xl bg-white shadow-xl sm:rounded-2xl" onMouseDown={(e) => e.stopPropagation()}>
+      <div role="dialog" aria-modal aria-label={title} className={cx("w-full rounded-t-2xl bg-white shadow-xl sm:rounded-2xl", wide ? "max-w-3xl" : "max-w-lg")} onMouseDown={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-line px-5 py-4">
           <h2 className="text-base font-semibold">{title}</h2>
           <button onClick={onClose} className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600" aria-label="Yopish">
@@ -156,3 +156,39 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 export const useToast = () => useContext(ToastCtx);
 
 export { cx };
+
+export function Toggle({ checked, onChange, label, hint }: { checked: boolean; onChange: (v: boolean) => void; label: string; hint?: string }) {
+  return (
+    <label className="flex cursor-pointer items-start gap-3">
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        onClick={() => onChange(!checked)}
+        className={cx("relative mt-0.5 inline-flex h-5 w-9 shrink-0 rounded-full transition", checked ? "bg-brand-600" : "bg-slate-300")}
+      >
+        <span className={cx("absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition", checked ? "left-[18px]" : "left-0.5")} />
+      </button>
+      <span>
+        <span className="block text-sm font-medium text-slate-700">{label}</span>
+        {hint && <span className="block text-xs text-muted">{hint}</span>}
+      </span>
+    </label>
+  );
+}
+
+export function Tabs<T extends string>({ value, onChange, items }: { value: T; onChange: (v: T) => void; items: { value: T; label: string }[] }) {
+  return (
+    <div className="mb-6 flex gap-1 overflow-x-auto border-b border-line">
+      {items.map((i) => (
+        <button
+          key={i.value}
+          onClick={() => onChange(i.value)}
+          className={cx("-mb-px whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-medium transition", value === i.value ? "border-brand-600 text-brand-700" : "border-transparent text-slate-500 hover:text-slate-700")}
+        >
+          {i.label}
+        </button>
+      ))}
+    </div>
+  );
+}

@@ -36,3 +36,11 @@ export async function sendMainMenu(u: User) {
     console.error("Talabaga menyu yuborilmadi:", e.message),
   );
 }
+
+export async function notifyAccessGranted(u: User, course: { id: string; title: string }, expiresAt: Date | null) {
+  if (!u.telegramId) return;
+  const https = env.publicWebUrl.startsWith("https://");
+  const until = expiresAt ? `\n⏳ Muddati: ${expiresAt.toLocaleDateString("ru-RU")} gacha` : "";
+  const markup = https ? { inline_keyboard: [[{ text: "▶️ Kursni ochish", web_app: { url: `${env.publicWebUrl}/courses/${course.id}` } }]] } : undefined;
+  await sendMessage(u.telegramId.toString(), `🎉 Sizga <b>${esc(course.title)}</b> kursi ochildi!${until}`, markup).catch((e) => console.error("Ruxsat xabari yuborilmadi:", e.message));
+}
