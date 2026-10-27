@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: ustozlar-jamoasi
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ustozlar-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: BOT_API_KEY
+        generateValue: true
+      - key: BOT_TOKEN
+        sync: false
+      - key: ADMIN_CHAT_ID
+        sync: false
+      - key: ADMIN_TELEGRAM_IDS
+        sync: false
+      - key: PUBLIC_WEB_URL
+        fromService:
+          type: web
+          name: ustozlar-jamoasi
+          property: host
+
+databases:
+  - name: ustozlar-db
+    databaseName: attestatsiya
+    user: att
+    plan: free
+    region: frankfurt

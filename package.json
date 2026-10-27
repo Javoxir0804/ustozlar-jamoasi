@@ -11,7 +11,7 @@
     "db:seed": "pnpm --filter @att/db seed",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
-    "render:build": "pnpm install --frozen-lockfile && pnpm --filter @att/db generate && pnpm --filter @att/web build",
-    "render:start": "pnpm --filter @att/db exec prisma migrate deploy && pnpm --filter @att/db seed && pnpm --filter @att/api start:prod"
+    "render:build": "pnpm install --frozen-lockfile --prod=false && pnpm --filter @att/db generate && pnpm --filter @att/web build",
+    "render:start": "sh start.sh"
   }
 }

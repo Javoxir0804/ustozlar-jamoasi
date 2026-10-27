@@ -32,13 +32,33 @@ Birinchi admin: `.env` dagi `ADMIN_TELEGRAM_IDS` ga Telegram ID ingizni yozing v
 
 ## Render'ga joylash
 
-Bitta veb-xizmat API, sayt va botni (webhook rejimida) birga ishga tushiradi, ma'lumotlar Render PostgreSQL'da.
+Platformani Render'ga 2 xil usulda joylash mumkin:
 
-- Build: `npx -y pnpm@10.28.0 run render:build`
-- Start: `npx -y pnpm@10.28.0 run render:start` (migratsiyalar va namuna ma'lumotlar avtomatik)
-- Muhit o'zgaruvchilari: `DATABASE_URL`, `JWT_SECRET`, `BOT_API_KEY`, `PUBLIC_WEB_URL`, `WEB_ORIGIN`, `API_URL=http://localhost:10000`, `BOT_TOKEN`, `VITE_BOT_USERNAME`, `ADMIN_CHAT_ID`, `ADMIN_TELEGRAM_IDS`.
-- `ADMIN_TELEGRAM_IDS` dagi foydalanuvchi botda ro'yxatdan o'tganda avtomatik admin bo'ladi.
-- Saytdagi "Telegram orqali kirish" ishlashi uchun BotFather'da `/setdomain` bilan sayt domenini kiriting.
+### 1-usul: Render Blueprint (Tavsiya etiladi — 1 tugma bilan)
+Loyihada `render.yaml` mavjud.
+1. Render Dashboard -> **New +** -> **Blueprint** bo'limiga kiring.
+2. Repozitoriyani (`ustozlar-jamoasi`) tanlang.
+3. Render PostgreSQL bazasi (`ustozlar-db`) va Veb-xizmatni (`ustozlar-jamoasi`) avtomatik yaratadi.
+4. Faqat bot sozlamalarini kiriting:
+   - `BOT_TOKEN` — @BotFather'dan olingan bot tokeni
+   - `ADMIN_CHAT_ID` — to'lov cheklari boradigan chat ID si
+   - `ADMIN_TELEGRAM_IDS` — admin huquqi beriladigan Telegram ID lar
+5. **Apply** tugmasini bosing — baza migratsiyalari va dastlabki ma'lumotlar avtomatik ishga tushadi.
+
+### 2-usul: Qo'lda Web Service yaratish (Docker)
+- Environment: **Docker** (Dockerfile orqali avtomatik yig'iladi)
+- Port: `10000` (avtomatik o'rnatilgan)
+- Health Check Path: `/health`
+- Muhit o'zgaruvchilari:
+  - `DATABASE_URL` — PostgreSQL ulanish manzili (Render PostgreSQL internal URL)
+  - `JWT_SECRET` — xavfsiz kalit satri
+  - `BOT_API_KEY` — bot API kaliti
+  - `BOT_TOKEN` — Telegram bot tokeni
+  - `ADMIN_CHAT_ID` — to'lov cheklari boradigan chat ID
+  - `ADMIN_TELEGRAM_IDS` — admin ID lari
+  - `PUBLIC_WEB_URL` — Render xizmatingiz domeni (masalan: `https://ustozlar-jamoasi.onrender.com`)
+
+Saytdagi "Telegram orqali kirish" ishlashi uchun BotFather'da `/setdomain` bilan sayt domenini kiriting.
 
 ## Muhim qoidalar
 

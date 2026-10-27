@@ -1,5 +1,6 @@
 // Bot faqat API orqali ishlaydi: baza bilan to'g'ridan-to'g'ri gaplashmaydi.
-const API_URL = process.env.API_URL ?? "http://localhost:4000";
+const defaultPort = process.env.PORT ?? process.env.API_PORT ?? "4000";
+const API_URL = process.env.API_URL ?? `http://localhost:${defaultPort}`;
 const BOT_API_KEY = process.env.BOT_API_KEY ?? "dev-bot-key";
 
 export class ApiError extends Error {

@@ -28,7 +28,14 @@ app.listen(env.port, "0.0.0.0", async () => {
   console.log(`Server ${env.port}-portda ishga tushdi`);
   if (!bot) return console.warn("BOT_TOKEN berilmagan: bot o'chiq");
   if (!publicUrl?.startsWith("https://")) return console.warn("PUBLIC_WEB_URL https emas: webhook o'rnatilmadi");
-  await bot.init();
-  await bot.api.setWebhook(`${publicUrl}${hookPath}`, { drop_pending_updates: false });
-  console.log(`Bot @${bot.botInfo.username} webhook rejimida`);
+
+  try {
+    await bot.init();
+    const cleanPublicUrl = publicUrl.replace(/\/+$/, "");
+    const webhookUrl = `${cleanPublicUrl}${hookPath}`;
+    await bot.api.setWebhook(webhookUrl, { drop_pending_updates: false });
+    console.log(`Bot @${bot.botInfo.username} webhook rejimida: ${webhookUrl}`);
+  } catch (err) {
+    console.error("Bot webhook o'rnatishda xatolik yuz berdi (server ishlashda davom etadi):", err);
+  }
 });

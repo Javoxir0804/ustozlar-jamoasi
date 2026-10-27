@@ -35,10 +35,19 @@ export function createApp(opts: { beforeErrors?: (app: express.Express) => void 
       frameguard: false,
     }),
   );
-  app.use(cors({ origin: env.webOrigin }));
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        // Brauzer yoki server so'rovlarini to'liq qo'llab-quvvatlash
+        callback(null, true);
+      },
+      credentials: true,
+    }),
+  );
   app.use(express.json({ limit: "1mb" }));
   app.use("/api", rateLimit({ windowMs: 60_000, limit: 300 }));
 
+  app.get("/health", (_req, res) => res.json({ ok: true }));
   app.get("/api/health", (_req, res) => res.json({ ok: true }));
   app.use("/api/auth", authRouter);
   app.use("/api/public", publicRouter);
