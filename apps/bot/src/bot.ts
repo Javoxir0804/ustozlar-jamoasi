@@ -8,7 +8,11 @@ export type Ctx = Context & SessionFlavor<SessionData> & { dbUser?: BotUser | nu
 
 // Cheklar shu chatga (admin yoki adminlar guruhi) tasdiqlash tugmalari bilan yuboriladi
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID;
-const WEB = process.env.PUBLIC_WEB_URL ?? process.env.RENDER_EXTERNAL_URL ?? "http://localhost:5173";
+let rawWeb = process.env.PUBLIC_WEB_URL ?? process.env.RENDER_EXTERNAL_URL ?? "http://localhost:5173";
+if (rawWeb && !rawWeb.startsWith("http://") && !rawWeb.startsWith("https://")) {
+  rawWeb = `https://${rawWeb}`;
+}
+const WEB = rawWeb;
 // Telegram Web App faqat HTTPS manzilda ochiladi; lokal ishlab chiqishda oddiy havola beriladi
 const isHttps = WEB.startsWith("https://");
 
