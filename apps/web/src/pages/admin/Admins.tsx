@@ -2,7 +2,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { PageHeader } from "../../components/layouts";
 import { IconPlus } from "../../components/icons";
-import { Alert, Badge, Button, Card, Field, Input, Modal, PageLoader, useToast } from "../../components/ui";
+import { Alert, Badge, Button, Card, Field, Input, PasswordInput, Modal, PageLoader, useToast } from "../../components/ui";
 import { api, ApiError, fmtDate, fullName, type User } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 
@@ -150,7 +150,7 @@ export default function Admins() {
             <Input value={draft.login} onChange={(e) => setDraft({ ...draft, login: e.target.value })} autoCapitalize="none" autoComplete="off" />
           </Field>
           <Field label="Parol" hint="Kamida 8 belgi">
-            <Input type="password" value={draft.password} onChange={(e) => setDraft({ ...draft, password: e.target.value })} autoComplete="new-password" />
+            <PasswordInput value={draft.password} onChange={(e) => setDraft({ ...draft, password: e.target.value })} autoComplete="new-password" />
           </Field>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={() => setCreating(false)}>
@@ -167,7 +167,7 @@ export default function Admins() {
         <form onSubmit={savePassword} className="space-y-4">
           {formErr && <Alert>{formErr}</Alert>}
           <Field label="Yangi parol" hint="Kamida 8 belgi">
-            <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} autoComplete="new-password" autoFocus />
+            <PasswordInput value={newPassword} onChange={(e) => setNewPassword(e.target.value)} autoComplete="new-password" autoFocus />
           </Field>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={() => setEditing(null)}>

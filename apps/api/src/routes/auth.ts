@@ -7,6 +7,7 @@ import { publicUser, requireAuth, signToken, audit } from "../auth/session.js";
 import { verifyLoginWidget, verifyWebAppInitData, type TelegramUser } from "../auth/telegram.js";
 import { ApiError, badRequest, h } from "../lib/errors.js";
 import { profileSchema } from "../services/profile.js";
+import { loginField } from "./admin/admins.js";
 import { notifyNewStudent, sendMainMenu } from "../bot/notify.js";
 
 export const authRouter = Router();
@@ -93,6 +94,32 @@ authRouter.put(
       void sendMainMenu(user);
     }
     res.json(publicUser(user));
+  }),
+);
+
+// Admin o'z profilini tahrirlaydi: ism, familiya va login. Login o'zgarsa joriy parol so'raladi.
+authRouter.patch(
+  "/me/account",
+  requireAuth,
+  h(async (req, res) => {
+    const me = req.user!;
+    if (me.role !== "ADMIN") throw badRequest("NOT_ADMIN", "Faqat admin uchun");
+    const d = z
+      .object({
+        firstName: z.string().trim().min(1, "Ismni kiriting").max(60),
+        lastName: z.string().trim().max(60).default(""),
+        login: loginField,
+        current: z.string().optional(),
+      })
+      .parse(req.body);
+    if (d.login !== me.login) {
+      if (!d.current || !verifyPassword(d.current, me.passwordHash)) throw badRequest("BAD_PASSWORD", "Loginni o'zgartirish uchun joriy parolni to'g'ri kiriting");
+      const taken = await prisma.user.findUnique({ where: { login: d.login } });
+      if (taken && taken.id !== me.id) throw badRequest("LOGIN_TAKEN", "Bu login band");
+    }
+    const u = await prisma.user.update({ where: { id: me.id }, data: { firstName: d.firstName, lastName: d.lastName, login: d.login } });
+    await audit(me.id, "admin.profile", "User", me.id, { login: d.login !== me.login ? d.login : undefined });
+    res.json(publicUser(u));
   }),
 );
 

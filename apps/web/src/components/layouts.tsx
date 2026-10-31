@@ -203,7 +203,7 @@ const ADMIN_NAV = [
   { to: "/admin/certificates", label: "Sertifikatlar", icon: IconAward },
   { to: "/admin/admins", label: "Adminlar", icon: IconShield },
   { to: "/admin/settings", label: "Sozlamalar", icon: IconSettings },
-  { to: "/admin/password", label: "Parolni o'zgartirish", icon: IconKey },
+  { to: "/admin/profile", label: "Profil va parol", icon: IconKey },
 ];
 
 export function AdminLayout() {
@@ -234,9 +234,13 @@ export function AdminLayout() {
       <p className="relative px-6 pb-1 font-mono text-[10px] uppercase tracking-[0.2em] text-slate-500">Admin panel</p>
       <div className="relative flex-1 overflow-y-auto">{nav}</div>
       <div className="relative border-t border-white/10 p-3">
-        <div className="px-3 pb-2 text-xs text-slate-400">
-          {user && fullName(user)} · <span className="text-slate-300">{user?.login}</span>
-        </div>
+        <Link to="/admin/profile" onClick={() => setOpen(false)} className="mb-1 flex items-center gap-3 rounded-lg px-3 py-2 transition hover:bg-white/5" title="Profilni tahrirlash">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-500/20 font-display text-sm font-semibold text-brand-200 ring-1 ring-white/10">{(user?.firstName || user?.login || "A").slice(0, 1).toUpperCase()}</span>
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-medium text-white">{user && fullName(user)}</span>
+            <span className="block truncate font-mono text-[11px] text-slate-400">@{user?.login}</span>
+          </span>
+        </Link>
         <button onClick={logout} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white">
           <IconLogout className="h-5 w-5" /> Chiqish
         </button>
@@ -294,7 +298,7 @@ export function BlockedNotice() {
 function PageFade({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   return (
-    <div key={pathname} className="animate-rise">
+    <div key={pathname} className="page-fade">
       {children}
     </div>
   );

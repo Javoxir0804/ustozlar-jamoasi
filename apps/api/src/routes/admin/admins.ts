@@ -7,7 +7,7 @@ import { badRequest, h, notFound } from "../../lib/errors.js";
 
 export const adminsRouter = Router();
 
-const loginField = z.string().trim().toLowerCase().min(3, "Login kamida 3 belgi").max(32).regex(/^[a-z0-9_.-]+$/, "Loginda faqat lotin harflari, raqam, _ . -");
+export const loginField = z.string().trim().toLowerCase().min(3, "Login kamida 3 belgi").max(32).regex(/^[a-z0-9_.-]+$/, "Loginda faqat lotin harflari, raqam, _ . -");
 const passwordField = z.string().min(8, "Parol kamida 8 belgi").max(100);
 const nameField = z.string().trim().min(1, "Ismni kiriting").max(60);
 

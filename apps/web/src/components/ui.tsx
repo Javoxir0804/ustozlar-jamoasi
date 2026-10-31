@@ -1,5 +1,6 @@
 // Umumiy interfeys elementlari: tugma, maydon, karta, oyna, xabarlar.
-import { createContext, useCallback, useContext, useEffect, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
+import { createPortal } from "react-dom";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
 
@@ -63,6 +64,31 @@ export function Input({ invalid, className, ...rest }: InputHTMLAttributes<HTMLI
   return <input className={cx(inputBase, "h-10", invalid ? "border-red-400" : "border-line", className)} {...rest} />;
 }
 
+/** Parol maydoni: ko'z belgisi bilan ko'rsatish va yashirish. */
+export function PasswordInput({ invalid, className, ...rest }: Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & { invalid?: boolean }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="relative">
+      <input type={show ? "text" : "password"} className={cx(inputBase, "h-10 pr-11", invalid ? "border-red-400" : "border-line", className)} {...rest} />
+      <button
+        type="button"
+        onClick={() => setShow((v) => !v)}
+        aria-label={show ? "Parolni yashirish" : "Parolni ko'rsatish"}
+        title={show ? "Parolni yashirish" : "Parolni ko'rsatish"}
+        className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-xl text-slate-400 transition hover:text-brand-600"
+      >
+        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          {show ? (
+            <path d="M3 3l18 18M10.6 5.1A10.9 10.9 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.2M6.6 6.6A17.4 17.4 0 0 0 2 12s3.5 7 10 7a10 10 0 0 0 5.4-1.6M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+          ) : (
+            <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6" />
+          )}
+        </svg>
+      </button>
+    </div>
+  );
+}
+
 export function Textarea({ invalid, className, ...rest }: TextareaHTMLAttributes<HTMLTextAreaElement> & { invalid?: boolean }) {
   return <textarea className={cx(inputBase, "py-2", invalid ? "border-red-400" : "border-line", className)} {...rest} />;
 }
@@ -113,30 +139,82 @@ export function EmptyState({ title, text, action }: { title: string; text?: stri
   );
 }
 
+/**
+ * Oyna: document.body ichiga chiziladi (sahifa animatsiyasi joylashuvini buzmasin), ekran markazida,
+ * sarlavha va pastki tugmalar doim ko'rinadi, uzun mazmun ichida aylanadi.
+ * Telefon yoki brauzerning "orqaga" tugmasi oynani yopadi (sahifadan chiqib ketmaydi).
+ */
 export function Modal({ open, onClose, title, children, footer, wide }: { open: boolean; onClose: () => void; title: string; children: ReactNode; footer?: ReactNode; wide?: boolean }) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
   }, [open, onClose]);
+  useBackToClose(open, onClose);
   if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-cosmos-950/50 p-0 backdrop-blur-sm sm:items-center sm:p-4" onMouseDown={onClose}>
-      <div role="dialog" aria-modal aria-label={title} className={cx("w-full animate-rise rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl", wide ? "max-w-3xl" : "max-w-lg")} onMouseDown={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between border-b border-line px-5 py-4">
-          <h2 className="font-display text-base font-semibold">{title}</h2>
-          <button onClick={onClose} className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600" aria-label="Yopish">
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-cosmos-950/55 backdrop-blur-sm sm:items-center sm:p-6" onMouseDown={onClose}>
+      <div
+        role="dialog"
+        aria-modal
+        aria-label={title}
+        className={cx("flex max-h-[92dvh] w-full animate-rise flex-col rounded-t-3xl bg-white shadow-2xl sm:max-h-[88vh] sm:rounded-3xl", wide ? "max-w-3xl" : "max-w-lg")}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <div className="flex shrink-0 items-center gap-3 border-b border-line px-5 py-4">
+          <button onClick={onClose} className="-ml-1 rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-ink sm:hidden" aria-label="Orqaga">
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+          <h2 className="min-w-0 flex-1 truncate font-display text-base font-semibold">{title}</h2>
+          <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600" aria-label="Yopish" title="Yopish (Esc)">
             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
             </svg>
           </button>
         </div>
-        <div className="max-h-[70vh] overflow-y-auto px-5 py-4">{children}</div>
-        {footer && <div className="flex justify-end gap-2 border-t border-line px-5 py-3">{footer}</div>}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">{children}</div>
+        {footer && <div className="flex shrink-0 flex-wrap justify-end gap-2 border-t border-line px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
+}
+
+/** Oyna ochilganda tarixga belgi qo'yadi: "orqaga" bosilsa sahifa emas, oyna yopiladi. */
+function useBackToClose(open: boolean, onClose: () => void) {
+  const close = useRef(onClose);
+  close.current = onClose;
+  const id = useRef(`m${Math.random().toString(36).slice(2)}`);
+  const active = useRef(false);
+  useEffect(() => {
+    if (!open) return;
+    const me = id.current;
+    active.current = true;
+    if (window.history.state?.modal !== me) window.history.pushState({ ...window.history.state, modal: me }, "");
+    const onPop = () => {
+      if (active.current && window.history.state?.modal !== me) {
+        active.current = false;
+        close.current();
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      active.current = false;
+      // Tugma bilan yopilganda tarixdagi belgini olib tashlaymiz (qayta ochilgan bo'lsa tegmaymiz)
+      setTimeout(() => {
+        if (!active.current && window.history.state?.modal === me) window.history.back();
+      }, 0);
+    };
+  }, [open]);
 }
 
 // ---------- Qisqa xabarlar (toast) ----------

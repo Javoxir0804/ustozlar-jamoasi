@@ -3,7 +3,7 @@ import { useState, type FormEvent } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { Atom, FloatingFormulas } from "../../components/Physics";
 import { Logo } from "../../components/Logo";
-import { Alert, Button, Card, Field, Input, PageLoader } from "../../components/ui";
+import { Alert, Button, Card, Field, Input, PasswordInput, PageLoader } from "../../components/ui";
 import { api, ApiError, type User } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 
@@ -51,7 +51,7 @@ export default function AdminLogin() {
               <Input value={login} onChange={(e) => setLogin(e.target.value)} autoComplete="username" autoCapitalize="none" autoFocus />
             </Field>
             <Field label="Parol">
-              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
+              <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
             </Field>
             <Button type="submit" className="w-full" loading={busy}>
               Kirish

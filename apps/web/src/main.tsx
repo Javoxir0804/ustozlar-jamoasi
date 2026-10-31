@@ -15,7 +15,7 @@ const Dashboard = lazy(() => import("./pages/admin/Dashboard"));
 const Students = lazy(() => import("./pages/admin/Students"));
 const Admins = lazy(() => import("./pages/admin/Admins"));
 const SettingsPage = lazy(() => import("./pages/admin/Settings"));
-const Password = lazy(() => import("./pages/admin/Password"));
+const AdminProfile = lazy(() => import("./pages/admin/Profile"));
 const Subjects = lazy(() => import("./pages/admin/Subjects"));
 const AdminCourses = lazy(() => import("./pages/admin/Courses"));
 const CourseEdit = lazy(() => import("./pages/admin/CourseEdit"));
@@ -88,7 +88,8 @@ createRoot(document.getElementById("root")!).render(
                   <Route path="certificates" element={<AdminCertificates />} />
                   <Route path="admins" element={<Admins />} />
                   <Route path="settings" element={<SettingsPage />} />
-                  <Route path="password" element={<Password />} />
+                  <Route path="profile" element={<AdminProfile />} />
+                  <Route path="password" element={<Navigate to="/admin/profile" replace />} />
                   <Route path="*" element={<Navigate to="/admin" replace />} />
                 </Route>
               </Route>

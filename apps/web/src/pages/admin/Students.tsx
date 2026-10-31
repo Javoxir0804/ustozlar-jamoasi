@@ -232,9 +232,14 @@ export default function Students() {
         title={selected ? fullName(selected) : ""}
         footer={
           selected && (
-            <Button variant={selected.status === "BLOCKED" ? "primary" : "danger"} loading={busy} onClick={() => toggleBlock(selected)}>
-              {selected.status === "BLOCKED" ? "Blokdan chiqarish" : "Bloklash"}
-            </Button>
+            <>
+              <Button variant="secondary" onClick={() => setSelected(null)} className="mr-auto">
+                Yopish
+              </Button>
+              <Button variant={selected.status === "BLOCKED" ? "primary" : "danger"} loading={busy} onClick={() => toggleBlock(selected)}>
+                {selected.status === "BLOCKED" ? "Blokdan chiqarish" : "Bloklash"}
+              </Button>
+            </>
           )
         }
       >
